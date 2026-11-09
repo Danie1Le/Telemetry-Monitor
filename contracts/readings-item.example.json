@@ -1,0 +1,10 @@
+{
+  "sensorId": "engine-1.chamber_temp",
+  "second": 1794233041,
+  "offsets": [0, 100],
+  "values": [3303.3, 3294.1],
+  "unit": "K",
+  "phase": "ascent",
+  "flightId": "20261109T140300Z-7f3a",
+  "ttl": 1794319441
+}

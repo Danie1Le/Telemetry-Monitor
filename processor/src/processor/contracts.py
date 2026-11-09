@@ -1,5 +1,6 @@
 import json
 import os
+from functools import cache
 from pathlib import Path
 
 import yaml
@@ -12,6 +13,7 @@ CONTRACTS_DIR = Path(os.environ.get("CONTRACTS_DIR", _REPO / "contracts"))
 SENSORS_CONFIG = Path(os.environ.get("SENSORS_CONFIG", _REPO / "sensors.yaml"))
 
 
+@cache
 def validator(name: str) -> Draft202012Validator:
     """Validator for contracts/<name>.schema.json; relative $refs resolve within CONTRACTS_DIR."""
     registry = Registry().with_resources(
@@ -22,6 +24,7 @@ def validator(name: str) -> Draft202012Validator:
     return Draft202012Validator(schema, registry=registry)
 
 
+@cache
 def load_sensors() -> dict:
     """Parse the sensor config and validate it against sensors.schema.json."""
     config = yaml.safe_load(SENSORS_CONFIG.read_text())

@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Readings item",
+  "description": "One item of the DynamoDB `readings` table: one sensor's readings for one second. Partition key `sensorId`, sort key `second`. Written by the processor as a conditional put, so a duplicate delivery changes nothing. `offsets[i]` is the millisecond offset (0-999) from `second` of `values[i]`; the arrays are parallel and in message order. Stored as arrays rather than one item per reading to stay near 1 WCU per item.",
+  "type": "object",
+  "required": ["sensorId", "second", "offsets", "values", "unit", "phase", "flightId", "ttl"],
+  "additionalProperties": false,
+  "properties": {
+    "sensorId": { "$ref": "common.schema.json#/$defs/sensorId" },
+    "second": { "$ref": "common.schema.json#/$defs/epochSecond" },
+    "offsets": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "integer", "minimum": 0, "maximum": 999 }
+    },
+    "values": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "number" }
+    },
+    "unit": {
+      "description": "From sensors.yaml for the sensor type.",
+      "type": "string"
+    },
+    "phase": { "$ref": "common.schema.json#/$defs/phase" },
+    "flightId": { "$ref": "common.schema.json#/$defs/flightId" },
+    "ttl": {
+      "description": "24 hours after the item is written.",
+      "$ref": "common.schema.json#/$defs/ttl"
+    }
+  }
+}
