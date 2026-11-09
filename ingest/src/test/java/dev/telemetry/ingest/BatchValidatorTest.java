@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -24,7 +23,7 @@ class BatchValidatorTest {
   static BatchValidator validatorAt(long nowMillis) {
     try {
       return new BatchValidator(
-          Path.of("../sensors.yaml"), Clock.fixed(Instant.ofEpochMilli(nowMillis), ZoneOffset.UTC));
+          "../sensors.yaml", Clock.fixed(Instant.ofEpochMilli(nowMillis), ZoneOffset.UTC));
     } catch (IOException e) {
       throw new IllegalStateException(e);
     }

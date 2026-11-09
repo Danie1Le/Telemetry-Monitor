@@ -1,5 +1,10 @@
 package dev.telemetry.ingest;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -8,6 +13,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -15,8 +21,12 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
+import software.amazon.awssdk.core.exception.SdkClientException;
+import software.amazon.awssdk.services.sqs.SqsClient;
+import software.amazon.awssdk.services.sqs.model.SendMessageRequest;
 
 @WebMvcTest(ReadingsController.class)
 @Import({BatchValidator.class, ReadingsControllerTest.FixedClock.class})
@@ -32,6 +42,7 @@ class ReadingsControllerTest {
   }
 
   @Autowired MockMvc mvc;
+  @MockitoBean SqsClient sqs;
 
   ResultActions send(String json) throws Exception {
     return mvc.perform(post("/readings").contentType(MediaType.APPLICATION_JSON).content(json));
@@ -57,6 +68,65 @@ class ReadingsControllerTest {
         .andExpect(status().isAccepted())
         .andExpect(jsonPath("$.accepted").value(1))
         .andExpect(jsonPath("$.rejected").value(2));
+  }
+
+  static final String VALID =
+      """
+      [{"sensorId":"engine-1.tank_pressure","ts":1794233040000,"value":341.2,"unit":"kPa"}]\
+      """;
+  static final String CORRUPT_ONLY =
+      """
+      [{"sensorId":"engine-1.tank_pressure","ts":1794233040100,"value":339.8,"unit":"psi"}]\
+      """;
+
+  String sentBody() {
+    var captor = ArgumentCaptor.forClass(SendMessageRequest.class);
+    verify(sqs).sendMessage(captor.capture());
+    return captor.getValue().messageBody();
+  }
+
+  @Test
+  void sendsOneMessageWithValidReadings() throws Exception {
+    send(batch("1", "", VALID)).andExpect(status().isAccepted());
+    var body = sentBody();
+    assertEquals(
+        ContractTest.JSON.readTree(
+            """
+            {"schemaVersion":1,"flightId":"20261109T140300Z-7f3a","phase":"ascent",
+             "engineId":"engine-1","second":1794233040,"receivedAt":%d,
+             "readings":{"engine-1.tank_pressure":[{"ts":1794233040000,"value":341.2}]},
+             "rejectedCounts":{}}\
+            """
+                .formatted(BatchValidatorTest.NOW)),
+        ContractTest.JSON.readTree(body));
+  }
+
+  @Test
+  void corruptOnlyBatchStillSendsSoSensorIsPresent() throws Exception {
+    send(batch("1", "", CORRUPT_ONLY)).andExpect(status().isAccepted());
+    var body = sentBody();
+    var message = ContractTest.JSON.readTree(body);
+    assertEquals(0, message.get("readings").size());
+    assertEquals(1, message.get("rejectedCounts").get("engine-1.tank_pressure").asInt());
+  }
+
+  @Test
+  void emptyBatchSendsNothing() throws Exception {
+    send(batch("1", "", "[]")).andExpect(status().isAccepted());
+    verifyNoInteractions(sqs);
+  }
+
+  @Test
+  void invalidBatchSendsNothing() throws Exception {
+    send(batch("2", "", VALID)).andExpect(status().isBadRequest());
+    verifyNoInteractions(sqs);
+  }
+
+  @Test
+  void sendFailureIs503() throws Exception {
+    when(sqs.sendMessage(any(SendMessageRequest.class)))
+        .thenThrow(SdkClientException.create("down"));
+    send(batch("1", "", VALID)).andExpect(status().isServiceUnavailable());
   }
 
   @Test

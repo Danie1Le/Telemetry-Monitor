@@ -36,11 +36,11 @@ public class BatchValidator {
   private final long staleMillis;
   private final long futureMillis;
 
-  BatchValidator(@Value("${telemetry.sensors-config}") Path sensorsConfig, Clock clock)
+  BatchValidator(@Value("${telemetry.sensors-config}") String sensorsConfig, Clock clock)
       throws IOException {
     this.clock = clock;
     Map<String, Map<String, Object>> config;
-    try (var in = Files.newBufferedReader(sensorsConfig)) {
+    try (var in = Files.newBufferedReader(Path.of(sensorsConfig))) {
       config = new Yaml().load(in);
     }
     @SuppressWarnings("unchecked")
