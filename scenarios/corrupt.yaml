@@ -1,0 +1,9 @@
+# One of each corrupt reading kind during ascent hold (ascent runs 40-160 s; rule graces end by 55 s).
+# Ingest rejects these readings, but a sensor with all readings rejected is present-but-corrupt
+# (rejectedCounts), never a dropout: no alert may fire, however long the fault outlasts
+# rules.dropout.missingSeconds.
+faults:
+  - { kind: corrupt_unit, engine: 1, sensor: chamber_temp, startSecond: 60, durationSeconds: 10 }
+  - { kind: corrupt_missing, engine: 1, sensor: tank_pressure, startSecond: 75, durationSeconds: 15 }
+  - { kind: corrupt_stale, engine: 1, sensor: fuel_flow, startSecond: 95, durationSeconds: 20 }
+  - { kind: corrupt_future, engine: 1, sensor: vibration, startSecond: 120, durationSeconds: 30 }

@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 from jsonschema import ValidationError
 
-from simulator.contracts import load_sensors
+from simulator.contracts import load_sensors, validator
 from simulator.faults import apply_faults, load_scenario
 from simulator.flight import flight_seconds, make_batch, start_flight
 
@@ -48,6 +48,68 @@ def values(batches, sensor_id):
         for r in b["readings"]
         if r["sensorId"] == sensor_id
     ]
+
+
+CORRUPT = ["corrupt_unit", "corrupt_missing", "corrupt_stale", "corrupt_future"]
+READING = validator("http-batch").evolve(
+    schema={"$ref": "http-batch.schema.json#/$defs/reading"}
+)
+
+
+def corrupt_reasons(cfg, batch, r):
+    """Why ingest must drop this reading, from the rules documented in http-batch.schema.json.
+
+    Ingest's clock is taken at the start of the batch second for stale and at its end for future,
+    the cases least favourable to rejecting.
+    """
+    if list(READING.iter_errors(r)):
+        return ["schema"]
+    start, skew = batch["second"] * 1000, cfg["skew"]
+    unit = cfg["sensorTypes"][r["sensorId"].split(".")[1]]["unit"]
+    return [
+        reason
+        for reason, bad in [
+            ("unit", r["unit"] != unit),
+            ("window", not start <= r["ts"] <= start + 999),
+            ("stale", start - r["ts"] > skew["staleSeconds"] * 1000),
+            ("future", r["ts"] - (start + 999) > skew["futureSeconds"] * 1000),
+        ]
+        if bad
+    ]
+
+
+@pytest.mark.parametrize(
+    ("kind", "reasons"),
+    [
+        ("corrupt_unit", ["unit"]),
+        ("corrupt_missing", ["schema"]),
+        ("corrupt_stale", ["window", "stale"]),
+        ("corrupt_future", ["window", "future"]),
+    ],
+)
+def test_corrupt_reading_has_exactly_the_shape_ingest_rejects(cfg, kind, reasons):
+    clean, faulted = fly(cfg, [fault(kind)])
+    for c, f in zip(clean, faulted, strict=True):
+        assert [r["sensorId"] for r in f["readings"]] == [
+            r["sensorId"] for r in c["readings"]
+        ]
+        for r in f["readings"]:
+            corrupt = (
+                r["sensorId"] == "engine-1.chamber_temp"
+                and AT <= f["second"] - START < AT + FOR
+            )
+            assert corrupt_reasons(cfg, f, r) == (reasons if corrupt else [])
+
+
+def test_corrupt_scenario_is_corrupt_only_and_never_removes_a_sensor(cfg):
+    faults = load_scenario(SCENARIOS / "corrupt.yaml", cfg)
+    assert sorted(f["kind"] for f in faults) == sorted(CORRUPT)
+    clean, faulted = fly(cfg, faults)
+    assert sum(c != f for c, f in zip(clean, faulted, strict=True)) == sum(
+        f["durationSeconds"] for f in faults
+    )
+    for c, f in zip(clean, faulted, strict=True):
+        assert len(f["readings"]) == len(c["readings"])
 
 
 def ascent(cfg, sensor):

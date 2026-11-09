@@ -11,14 +11,20 @@ DRIFT_CAP = 3  # slow_drift's peak offset, in driftTolerance units
 def load_scenario(path: Path, cfg: dict) -> list[dict]:
     """The scenario's faults, validated against scenario.schema.json and the sensor config."""
     faults = load_yaml(path, "scenario")["faults"]
+    check_faults(faults, cfg, f"scenario {path}")
+    return faults
+
+
+def check_faults(faults: list[dict], cfg: dict, where: str) -> None:
+    """Checks that scenario.schema.json cannot express: raises ValueError."""
     unknown = {f["sensor"] for f in faults} - cfg["sensorTypes"].keys()
     if unknown:
-        raise ValueError(f"scenario {path}: unknown sensor types {sorted(unknown)}")
+        raise ValueError(f"{where}: unknown sensor types {sorted(unknown)}")
     for f in faults:
         if f["engine"] > cfg["engineCount"]:
-            raise ValueError(f"scenario {path}: engine {f['engine']} > engineCount")
+            raise ValueError(f"{where}: engine {f['engine']} > engineCount")
         if f["startSecond"] + f["durationSeconds"] > flight_seconds(cfg):
-            raise ValueError(f"scenario {path}: a fault runs past the flight's end")
+            raise ValueError(f"{where}: a fault runs past the flight's end")
     window = cfg["rules"]["drift"]["windowSeconds"]
     for sensor, spec in cfg["sensorTypes"].items():
         for phase, lim in spec["phases"].items():
@@ -31,7 +37,6 @@ def load_scenario(path: Path, cfg: dict) -> list[dict]:
                 raise ValueError(
                     f"{sensor}.{phase}: slow_drift would pass maxRatePerSec"
                 )
-    return faults
 
 
 def apply_faults(cfg: dict, faults: list[dict], flight: Flight, batch: dict) -> dict:
@@ -52,10 +57,29 @@ def apply_faults(cfg: dict, faults: list[dict], flight: Flight, batch: dict) -> 
         lim = cfg["sensorTypes"][fault["sensor"]]["phases"][batch["phase"]]
         start_ms = (flight.start + start) * 1000
         for r in batch["readings"]:
-            if r["sensorId"] == sensor_id:
+            if r["sensorId"] != sensor_id:
+                continue
+            if fault["kind"].startswith("corrupt_"):
+                _corrupt(fault["kind"], r, cfg["skew"])
+            else:
                 t = (r["ts"] - start_ms) / 1000
                 r["value"] = _faulted(fault, r["value"], t, lim, cfg)
     return batch
+
+
+def _corrupt(kind: str, r: dict, skew: dict) -> None:
+    """Break one reading so ingest must drop it; the reading stays, so it is no dropout.
+
+    A 1 s shift also leaves ingest's ts-in-batch-second window, so the offsets need no margin.
+    """
+    if kind == "corrupt_unit":
+        r["unit"] = "furlongs"
+    elif kind == "corrupt_missing":
+        del r["value"]
+    elif kind == "corrupt_stale":
+        r["ts"] -= (skew["staleSeconds"] + 1) * 1000
+    else:
+        r["ts"] += (skew["futureSeconds"] + 1) * 1000
 
 
 def _faulted(fault: dict, value: float, t: float, lim: dict, cfg: dict) -> float:

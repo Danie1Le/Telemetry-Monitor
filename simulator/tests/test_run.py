@@ -46,9 +46,17 @@ class Driver:
             raise ConnectionRefusedError
         self.sent.append(batch)
 
-    def run(self, cfg, seed=1, faults=()):
+    def run(self, cfg, seed=1, faults=(), control=None):
         with pytest.raises(Stop):
-            sim.run(cfg, random.Random(seed), self.send, self.clock, self.sleep, faults)
+            sim.run(
+                cfg,
+                random.Random(seed),
+                self.send,
+                self.clock,
+                self.sleep,
+                faults,
+                control,
+            )
         return self.sent
 
 
@@ -126,7 +134,8 @@ def test_none_scenario_changes_nothing(cfg):
 def test_main_runs_the_scenario_from_env(monkeypatch):
     seen = {}
     monkeypatch.setenv("SCENARIO", str(SCENARIOS / "spike.yaml"))
-    monkeypatch.setattr(sim, "run", lambda *a, faults: seen.update(faults=faults))
+    monkeypatch.setenv("CONTROL_PORT", "0")
+    monkeypatch.setattr(sim, "run", lambda *a, faults, **kw: seen.update(faults=faults))
     sim.main()
     assert [f["kind"] for f in seen["faults"]] == ["spike"]
 
