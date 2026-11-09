@@ -1,11 +1,8 @@
 import json
 
-import boto3
 import pytest
 from botocore.exceptions import ClientError
 from jsonschema import ValidationError
-from testcontainers.core.container import DockerContainer
-from testcontainers.core.wait_strategies import LogMessageWaitStrategy
 
 from processor import readings
 from processor.contracts import CONTRACTS_DIR, validator
@@ -67,40 +64,6 @@ def test_offset_outside_the_second_is_rejected(ts):
     bad = {**MESSAGE, "readings": {"engine-1.chamber_temp": [{"ts": ts, "value": 1.0}]}}
     with pytest.raises(ValidationError):
         readings.to_items(bad, NOW)
-
-
-@pytest.fixture(scope="module")
-def table():
-    with (
-        DockerContainer("amazon/dynamodb-local:2.5.4")
-        .with_exposed_ports(8000)
-        .with_command("-jar DynamoDBLocal.jar -inMemory")
-        .waiting_for(LogMessageWaitStrategy("Initializing DynamoDB Local")) as container
-    ):
-        endpoint = f"http://{container.get_container_host_ip()}:{container.get_exposed_port(8000)}"
-        env = pytest.MonkeyPatch()
-        env.setenv("AWS_ENDPOINT_URL", endpoint)
-        env.setenv("AWS_DEFAULT_REGION", "us-west-2")
-        env.setenv("AWS_ACCESS_KEY_ID", "local")
-        env.setenv("AWS_SECRET_ACCESS_KEY", "local")
-        env.setenv("READINGS_TABLE", "readings")
-        readings._table.cache_clear()
-        # Same keys as local/init.sh.
-        boto3.client("dynamodb").create_table(
-            TableName="readings",
-            AttributeDefinitions=[
-                {"AttributeName": "sensorId", "AttributeType": "S"},
-                {"AttributeName": "second", "AttributeType": "N"},
-            ],
-            KeySchema=[
-                {"AttributeName": "sensorId", "KeyType": "HASH"},
-                {"AttributeName": "second", "KeyType": "RANGE"},
-            ],
-            ProvisionedThroughput={"ReadCapacityUnits": 20, "WriteCapacityUnits": 20},
-        )
-        yield readings._table()
-        env.undo()
-        readings._table.cache_clear()
 
 
 def test_duplicate_delivery_stores_one_item_per_sensor_second(table):
