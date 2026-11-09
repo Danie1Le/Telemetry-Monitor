@@ -1,0 +1,6 @@
+# Shared by simulator/ and processor/ (run ruff from the root or a service directory).
+# src makes each service package first-party for import sorting.
+src = ["processor/src", "simulator/src"]
+
+[lint]
+extend-select = ["I", "UP", "B"]

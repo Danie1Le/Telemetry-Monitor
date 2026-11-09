@@ -1,0 +1,24 @@
+[project]
+name = "simulator"
+version = "0.1.0"
+description = "Telemetry Monitor simulator"
+authors = [
+    { name = "Danie1Le", email = "157658847+Danie1Le@users.noreply.github.com" }
+]
+requires-python = ">=3.14"
+dependencies = [
+    "jsonschema>=4.26.0",
+    "pyyaml>=6.0.3",
+    "referencing>=0.37.0",
+]
+
+[build-system]
+requires = ["uv_build>=0.13.7,<0.14.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.2.0",
+    "pytest-cov>=7.1.0",
+    "ruff>=0.17.4",
+]
