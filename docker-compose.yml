@@ -1,0 +1,28 @@
+# Local emulators only. Real AWS is provisioned by Terraform (#9).
+services:
+  elasticmq:
+    image: softwaremill/elasticmq-native:1.6.11
+    ports: ["127.0.0.1:9324:9324"]
+    volumes: ["./local/elasticmq.conf:/opt/elasticmq.conf:ro"]
+  dynamodb:
+    image: amazon/dynamodb-local:2.5.4
+    command: ["-jar", "DynamoDBLocal.jar", "-inMemory", "-sharedDb"]
+    ports: ["127.0.0.1:8000:8000"]
+  moto:
+    image: motoserver/moto:5.0.28
+    ports: ["127.0.0.1:5000:5000"]
+  valkey:
+    image: valkey/valkey:8.0.2
+    ports: ["127.0.0.1:6379:6379"]
+  init:
+    image: amazon/aws-cli:2.22.35
+    entrypoint: ["sh", "/init.sh"]
+    volumes: ["./local/init.sh:/init.sh:ro"]
+    environment:
+      DYNAMODB_ENDPOINT: http://dynamodb:8000
+      SNS_ENDPOINT: http://moto:5000
+      AWS_DEFAULT_REGION: us-west-2
+      AWS_ACCESS_KEY_ID: local
+      AWS_SECRET_ACCESS_KEY: local
+    depends_on: [dynamodb, moto]
+    restart: "no"

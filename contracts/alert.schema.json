@@ -42,8 +42,8 @@
       "$ref": "common.schema.json#/$defs/epochMillis"
     },
     "ttl": {
-      "description": "DynamoDB TTL, epoch seconds, 7 days after openedAt.",
-      "$ref": "common.schema.json#/$defs/epochSecond"
+      "description": "7 days after openedAt.",
+      "$ref": "common.schema.json#/$defs/ttl"
     }
   }
 }

@@ -32,6 +32,10 @@
     "epochMillis": {
       "type": "integer",
       "minimum": 0
+    },
+    "ttl": {
+      "description": "DynamoDB TTL attribute (epoch seconds) on the `readings` and `alerts` tables. The item expires after this time.",
+      "$ref": "#/$defs/epochSecond"
     }
   }
 }
