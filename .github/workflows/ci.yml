@@ -71,6 +71,30 @@ jobs:
           cache-from: type=gha,scope=${{ matrix.service }}
           cache-to: type=gha,scope=${{ matrix.service }},mode=max
 
+  e2e:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: astral-sh/setup-uv@v10.3.3
+        with:
+          cache-dependency-glob: simulator/uv.lock
+      - uses: helm/kind-action@v1.15.1
+        with:
+          version: v0.33.0
+          install_only: true
+      - run: scripts/kind-up.sh
+      - run: uv run --project simulator scripts/e2e.py
+      - if: failure()
+        run: |
+          kubectl --context kind-telemetry describe nodes
+          kubectl --context kind-telemetry get pods -A
+          kubectl --context kind-telemetry -n telemetry get events
+          kubectl --context kind-telemetry -n telemetry logs -l 'app in (simulator,ingest,processor)' --all-containers --prefix --tail=100
+      - if: always()
+        run: scripts/kind-down.sh
+
   terraform:
     runs-on: ubuntu-latest
     steps:

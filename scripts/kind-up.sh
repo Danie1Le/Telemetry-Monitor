@@ -8,7 +8,8 @@ ENVOY_GATEWAY=v1.9.3
 KEDA=v2.21.0
 k() { kubectl --context kind-telemetry "$@"; }
 
-kind get clusters 2>/dev/null | grep -qx telemetry || kind create cluster --name telemetry --config k8s/kind.yaml
+existed=true
+kind get clusters 2>/dev/null | grep -qx telemetry || { existed=false; kind create cluster --name telemetry --config k8s/kind.yaml; }
 
 for s in simulator ingest processor; do
   docker build -t "telemetry/$s:local" -f "$s/Dockerfile" .
@@ -36,7 +37,8 @@ k -n telemetry delete job init --ignore-not-found
 k apply -k k8s/overlays/local
 k -n telemetry wait job/init --for=condition=Complete --timeout=10m
 # subPath ConfigMap mounts and rebuilt :local images never reach running pods on their own.
-k -n telemetry rollout restart deployment/simulator deployment/ingest deployment/processor
+# A new cluster's pods already have both, and a 2-CPU CI runner has no room for surge pods.
+if $existed; then k -n telemetry rollout restart deployment/simulator deployment/ingest deployment/processor; fi
 for d in $(k -n telemetry get deployments -o name); do k -n telemetry rollout status "$d" --timeout=10m; done
 k -n telemetry wait gateway/telemetry --for=condition=Programmed --timeout=10m
 echo "Ready: curl http://localhost:8080/actuator/health"
