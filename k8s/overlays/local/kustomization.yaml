@@ -1,0 +1,51 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: telemetry
+resources:
+  - ../../base
+  - emulators.yaml
+  - init-job.yaml
+# Points the services at the in-cluster emulators (same names as docker-compose.yml).
+configMapGenerator:
+  - name: ingest-env
+    literals:
+      - TELEMETRY_QUEUE_URL=http://elasticmq:9324/000000000000/telemetry-readings
+      - TELEMETRY_SQS_ENDPOINT=http://elasticmq:9324
+      - TELEMETRY_DYNAMODB_ENDPOINT=http://dynamodb:8000
+  - name: processor-env
+    literals:
+      - QUEUE_URL=http://elasticmq:9324/000000000000/telemetry-readings
+      - DLQ_URL=http://elasticmq:9324/000000000000/telemetry-readings-dlq
+      - AWS_ENDPOINT_URL_SQS=http://elasticmq:9324
+      - AWS_ENDPOINT_URL_DYNAMODB=http://dynamodb:8000
+      - AWS_ENDPOINT_URL_SNS=http://moto:5000
+      - ALERTS_TOPIC_ARN=arn:aws:sns:us-west-2:123456789012:alerts
+# DynamoDB Local starts empty: hold the processor until the init Job has created the tables,
+# or every message it receives meanwhile fails three times and lands in the DLQ.
+patches:
+  - patch: |
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: processor
+      spec:
+        template:
+          spec:
+            initContainers:
+              - name: wait-for-tables
+                image: amazon/aws-cli:2.22.35
+                imagePullPolicy: IfNotPresent
+                args: [--endpoint-url, http://dynamodb:8000, dynamodb, wait, table-exists, --table-name, alerts]
+                env:
+                  - { name: AWS_DEFAULT_REGION, value: us-west-2 }
+                envFrom:
+                  - secretRef: { name: aws-credentials }
+                resources:
+                  requests: { cpu: 50m, memory: 64Mi }
+                  limits: { cpu: 500m, memory: 256Mi }
+# Dummy credentials: the emulators accept any key.
+secretGenerator:
+  - name: aws-credentials
+    literals:
+      - AWS_ACCESS_KEY_ID=local
+      - AWS_SECRET_ACCESS_KEY=local

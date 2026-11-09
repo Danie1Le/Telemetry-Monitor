@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: processor
+spec:
+  selector:
+    matchLabels: { app: processor }
+  template:
+    metadata:
+      labels: { app: processor }
+    spec:
+      # A 20s long poll plus the batch in hand must finish after SIGTERM.
+      terminationGracePeriodSeconds: 45
+      containers:
+        - name: processor
+          image: telemetry/processor:local
+          imagePullPolicy: IfNotPresent
+          env:
+            - { name: READINGS_TABLE, value: readings }
+            - { name: ALERTS_TABLE, value: alerts }
+            - { name: VALKEY_URL, value: "redis://valkey:6379/0" }
+            - { name: AWS_DEFAULT_REGION, value: us-west-2 }
+          # Overlays supply processor-env (queue URLs, endpoints) and aws-credentials.
+          envFrom:
+            - configMapRef: { name: processor-env }
+            - secretRef: { name: aws-credentials }
+          ports:
+            - { name: health, containerPort: 8080 }
+          livenessProbe:
+            httpGet: { path: /healthz, port: health }
+            initialDelaySeconds: 30
+          readinessProbe:
+            httpGet: { path: /healthz, port: health }
+          resources:
+            requests: { cpu: 50m, memory: 128Mi }
+            limits: { cpu: 500m, memory: 256Mi }
+          volumeMounts:
+            - { name: sensors, mountPath: /etc/telemetry/sensors.yaml, subPath: sensors.yaml }
+      volumes:
+        - name: sensors
+          configMap: { name: sensors }

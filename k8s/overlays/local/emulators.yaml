@@ -1,0 +1,111 @@
+# Local AWS emulators: ElasticMQ (SQS), DynamoDB Local, moto (SNS). Same images as docker-compose.yml.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: elasticmq
+spec:
+  selector:
+    matchLabels: { app: elasticmq }
+  template:
+    metadata:
+      labels: { app: elasticmq }
+    spec:
+      containers:
+        - name: elasticmq
+          image: softwaremill/elasticmq-native:1.6.11
+          imagePullPolicy: IfNotPresent
+          ports:
+            - { name: sqs, containerPort: 9324 }
+          livenessProbe:
+            tcpSocket: { port: sqs }
+          readinessProbe:
+            tcpSocket: { port: sqs }
+          resources:
+            requests: { cpu: 50m, memory: 64Mi }
+            limits: { cpu: 500m, memory: 256Mi }
+          volumeMounts:
+            - { name: conf, mountPath: /opt/elasticmq.conf, subPath: elasticmq.conf }
+      volumes:
+        # Created by scripts/kind-up.sh from local/elasticmq.conf.
+        - name: conf
+          configMap: { name: elasticmq-conf }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: elasticmq
+spec:
+  selector: { app: elasticmq }
+  ports:
+    - { name: sqs, port: 9324, targetPort: sqs }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dynamodb
+spec:
+  selector:
+    matchLabels: { app: dynamodb }
+  template:
+    metadata:
+      labels: { app: dynamodb }
+    spec:
+      containers:
+        - name: dynamodb
+          image: amazon/dynamodb-local:2.5.4
+          imagePullPolicy: IfNotPresent
+          args: ["-jar", "DynamoDBLocal.jar", "-inMemory", "-sharedDb"]
+          ports:
+            - { name: dynamodb, containerPort: 8000 }
+          livenessProbe:
+            tcpSocket: { port: dynamodb }
+          readinessProbe:
+            tcpSocket: { port: dynamodb }
+          resources:
+            requests: { cpu: 100m, memory: 256Mi }
+            limits: { cpu: "1", memory: 768Mi }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dynamodb
+spec:
+  selector: { app: dynamodb }
+  ports:
+    - { name: dynamodb, port: 8000, targetPort: dynamodb }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: moto
+spec:
+  selector:
+    matchLabels: { app: moto }
+  template:
+    metadata:
+      labels: { app: moto }
+    spec:
+      # Service links would set MOTO_PORT=tcp://..., which moto reads as its port.
+      enableServiceLinks: false
+      containers:
+        - name: moto
+          image: motoserver/moto:5.0.28
+          imagePullPolicy: IfNotPresent
+          ports:
+            - { name: sns, containerPort: 5000 }
+          livenessProbe:
+            tcpSocket: { port: sns }
+          readinessProbe:
+            tcpSocket: { port: sns }
+          resources:
+            requests: { cpu: 50m, memory: 128Mi }
+            limits: { cpu: 500m, memory: 384Mi }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: moto
+spec:
+  selector: { app: moto }
+  ports:
+    - { name: sns, port: 5000, targetPort: sns }

@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: simulator
+spec:
+  selector:
+    matchLabels: { app: simulator }
+  template:
+    metadata:
+      labels: { app: simulator }
+    spec:
+      containers:
+        - name: simulator
+          image: telemetry/simulator:local
+          imagePullPolicy: IfNotPresent
+          env:
+            - { name: INGEST_URL, value: http://ingest:8080/readings }
+          ports:
+            - { name: control, containerPort: 8081 }
+          livenessProbe:
+            httpGet: { path: /healthz, port: control }
+          readinessProbe:
+            httpGet: { path: /healthz, port: control }
+          resources:
+            requests: { cpu: 50m, memory: 64Mi }
+            limits: { cpu: 500m, memory: 256Mi }
+          volumeMounts:
+            - { name: sensors, mountPath: /etc/telemetry/sensors.yaml, subPath: sensors.yaml }
+      volumes:
+        # Created by scripts/kind-up.sh from the repo-root sensors.yaml.
+        - name: sensors
+          configMap: { name: sensors }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: simulator
+spec:
+  selector: { app: simulator }
+  ports:
+    - { name: control, port: 8081, targetPort: control }

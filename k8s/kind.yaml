@@ -1,0 +1,17 @@
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+# A throwaway cluster: skip etcd fsync. On Docker Desktop disks, slow fsync times out
+# leader-election lease renewals and crash-loops kube-controller-manager and kube-scheduler.
+kubeadmConfigPatches:
+  - |
+    kind: ClusterConfiguration
+    etcd:
+      local:
+        extraArgs:
+          - { name: unsafe-no-fsync, value: "true" }
+nodes:
+  - role: control-plane
+    image: kindest/node:v1.37.0@sha256:a1ed56cfb0e7b93589bdf97c8cd566405a265939e3620fc4f5de89adff580ae5
+    # The Gateway's Envoy Service is pinned to NodePort 30080 (k8s/base/gateway.yaml).
+    extraPortMappings:
+      - { containerPort: 30080, hostPort: 8080, listenAddress: 127.0.0.1 }
