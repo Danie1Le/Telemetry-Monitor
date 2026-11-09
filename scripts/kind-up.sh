@@ -5,6 +5,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 ENVOY_GATEWAY=v1.9.3
+KEDA=v2.21.0
 k() { kubectl --context kind-telemetry "$@"; }
 
 kind get clusters 2>/dev/null | grep -qx telemetry || kind create cluster --name telemetry --config k8s/kind.yaml
@@ -17,6 +18,10 @@ done
 # Envoy Gateway's release manifest also installs the Gateway API CRDs.
 k apply --server-side -f "https://github.com/envoyproxy/gateway/releases/download/$ENVOY_GATEWAY/install.yaml"
 k -n envoy-gateway-system wait deployment/envoy-gateway --for=condition=Available --timeout=10m
+
+# KEDA scales the processor on queue depth; its CRDs are too large for client-side apply.
+k apply --server-side -f "https://github.com/kedacore/keda/releases/download/$KEDA/keda-${KEDA#v}.yaml"
+k -n keda wait deployment --all --for=condition=Available --timeout=10m
 
 # These ConfigMaps come from files outside k8s/, which Kustomize cannot read; creating them
 # here keeps one copy of each file (symlinks are not reliable on Windows checkouts).

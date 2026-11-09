@@ -43,9 +43,16 @@ patches:
                 resources:
                   requests: { cpu: 50m, memory: 64Mi }
                   limits: { cpu: 500m, memory: 256Mi }
-# Dummy credentials: the emulators accept any key.
+  # The KEDA operator runs in its own namespace, so it needs ElasticMQ's namespaced name.
+  - target: { kind: ScaledObject, name: processor }
+    patch: |
+      - op: add
+        path: /spec/triggers/0/metadata/awsEndpoint
+        value: http://elasticmq.telemetry:9324
+# Dummy credentials: the emulators accept any key. No name hash, so the KEDA TriggerAuthentication finds the Secret by its plain name.
 secretGenerator:
   - name: aws-credentials
+    options: { disableNameSuffixHash: true }
     literals:
       - AWS_ACCESS_KEY_ID=local
       - AWS_SECRET_ACCESS_KEY=local

@@ -18,4 +18,3 @@ configMapGenerator:
       - TELEMETRY_DYNAMODB_ENDPOINT=
   - name: processor-env
     envs: [aws.env]
-# KEDA ScaledObject for the processor (#24) goes here, in resources.

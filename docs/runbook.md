@@ -30,7 +30,7 @@ Scripts handle steps 6, 7, 11 and 13. The other steps stay manual. Every resourc
 
 ## Notes
 
-- Steps 6 to 7 need the `kind` cluster, images and Envoy Gateway from `scripts/kind-up.sh`. `scripts/aws-up.sh` first removes the emulators and the init Job of the `local` overlay. It keeps the `telemetry` Namespace and the `aws-credentials` Secret from step 6.
+- Steps 6 to 7 need the `kind` cluster, images, Envoy Gateway and KEDA from `scripts/kind-up.sh`. A cluster created before KEDA was added must re-run `scripts/kind-up.sh` before `scripts/aws-up.sh`. `scripts/aws-up.sh` first removes the emulators and the init Job of the `local` overlay. It keeps the `telemetry` Namespace and the `aws-credentials` Secret from step 6.
 - `scripts/aws-key.sh` refuses to create a key while the demo user already has one: run `scripts/aws-key.sh --delete` first.
 - Run step 11 before step 12: the scripts read the demo user name and the Terraform outputs from the state.
 - `aws.env` is generated and gitignored. Nothing account-specific is committed. To render the overlay offline, copy the sample first: `cp k8s/overlays/aws/aws.env.example k8s/overlays/aws/aws.env`, then `kubectl kustomize k8s/overlays/aws`.

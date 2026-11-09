@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Deploys the `aws` overlay to the kind cluster: real SQS, DynamoDB and SNS from `terraform/main`.
-# Run after `terraform apply` and scripts/aws-key.sh. The kind cluster, images and Envoy Gateway come from scripts/kind-up.sh.
+# Run after `terraform apply` and scripts/aws-key.sh. The kind cluster, images, Envoy Gateway and KEDA come from scripts/kind-up.sh (a cluster created before KEDA was added must re-run it first).
 # Usage: scripts/aws-up.sh [--dry-run]   (--dry-run writes aws.env and prints the rendered manifests only)
 set -euo pipefail
 cd "$(dirname "$0")/.."
