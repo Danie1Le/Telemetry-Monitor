@@ -1,0 +1,37 @@
+version: 2
+updates:
+  - package-ecosystem: gradle
+    directory: /ingest
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3
+  - package-ecosystem: uv
+    directory: /simulator
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3
+  - package-ecosystem: uv
+    directory: /processor
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3
+  - package-ecosystem: docker
+    directory: /simulator
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3
+  - package-ecosystem: docker
+    directory: /processor
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3
+  - package-ecosystem: docker
+    directory: /ingest
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3
