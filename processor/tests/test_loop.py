@@ -76,6 +76,7 @@ def store_calls(monkeypatch):
     return calls
 
 
+@pytest.mark.integration
 def test_duplicate_delivery_stores_one_item_per_sensor_second(
     queues, table, store_calls
 ):
@@ -94,6 +95,7 @@ def test_duplicate_delivery_stores_one_item_per_sensor_second(
     assert stored(table) == first  # the second copy changed nothing, not even ttl
 
 
+@pytest.mark.integration
 def test_failed_dlq_send_leaves_the_message_for_the_next_poll(queues, monkeypatch):
     real_send, failed = queues.sqs.send_message, []
 
@@ -117,6 +119,7 @@ def test_failed_dlq_send_leaves_the_message_for_the_next_poll(queues, monkeypatc
     assert dead_letters(queues) == ["not json"]
 
 
+@pytest.mark.integration
 def test_crash_before_delete_is_redelivered_and_stored_once(
     queues, table, store_calls, monkeypatch
 ):
@@ -139,6 +142,7 @@ def test_crash_before_delete_is_redelivered_and_stored_once(
     assert stored(table) == first  # the redelivery changed nothing, not even ttl
 
 
+@pytest.mark.integration
 def test_poison_message_reaches_dlq_after_3_receives_and_queue_keeps_flowing(
     queues, table, monkeypatch
 ):
@@ -163,6 +167,7 @@ def test_poison_message_reaches_dlq_after_3_receives_and_queue_keeps_flowing(
     assert [json.loads(b) for b in dead_letters(queues)] == [poison]
 
 
+@pytest.mark.integration
 def test_out_of_order_messages_are_all_stored(queues, table):
     base = MESSAGE["second"]
     for offset in (3, 1, 2):
@@ -182,6 +187,7 @@ def test_out_of_order_messages_are_all_stored(queues, table):
     )
 
 
+@pytest.mark.integration
 @pytest.mark.parametrize(
     "body",
     [json.dumps({**MESSAGE, "schemaVersion": 2}), "not json"],
@@ -197,6 +203,7 @@ def test_bad_message_is_dead_lettered_at_once_and_nothing_stored(queues, table, 
     assert stored(table) == {}
 
 
+@pytest.mark.integration
 def test_contract_example_message_is_stored_as_the_example_item(queues, table):
     item = json.loads((CONTRACTS_DIR / "readings-item.example.json").read_text())
     send(queues, MESSAGE)

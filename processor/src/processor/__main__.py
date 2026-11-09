@@ -62,7 +62,7 @@ class Health(BaseHTTPRequestHandler):
         pass
 
 
-def main() -> None:
+def main() -> None:  # pragma: no cover - wiring, run by the Testcontainers tests
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
     # A bad config must stop startup, not dead-letter every message.
     load_sensors()

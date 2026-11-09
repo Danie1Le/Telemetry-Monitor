@@ -3,6 +3,7 @@ plugins {
 	id("org.springframework.boot") version "4.1.2"
 	id("io.spring.dependency-management") version "1.1.7"
 	id("com.diffplug.spotless") version "8.11.0"
+	jacoco
 }
 
 spotless {
@@ -36,4 +37,29 @@ dependencies {
 
 tasks.withType<Test> {
 	useJUnitPlatform()
+}
+
+// *IT classes need Docker (Testcontainers), so they run apart from the unit tests.
+tasks.test {
+	exclude("**/*IT.class")
+}
+
+tasks.register<Test>("integrationTest") {
+	testClassesDirs = sourceSets.test.get().output.classesDirs
+	classpath = sourceSets.test.get().runtimeClasspath
+	include("**/*IT.class")
+}
+
+tasks.jacocoTestCoverageVerification {
+	violationRules {
+		rule {
+			limit {
+				minimum = "0.70".toBigDecimal()
+			}
+		}
+	}
+}
+
+tasks.check {
+	dependsOn(tasks.jacocoTestCoverageVerification)
 }

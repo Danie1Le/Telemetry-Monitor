@@ -66,6 +66,7 @@ def test_offset_outside_the_second_is_rejected(ts):
         readings.to_items(bad, NOW)
 
 
+@pytest.mark.integration
 def test_duplicate_delivery_stores_one_item_per_sensor_second(table):
     readings.store(MESSAGE, NOW)
     readings.store(
@@ -79,6 +80,7 @@ def test_duplicate_delivery_stores_one_item_per_sensor_second(table):
     assert [float(v) for v in chamber["values"]] == [3303.3, 3294.1]
 
 
+@pytest.mark.integration
 def test_other_client_errors_are_not_swallowed(table, monkeypatch):
     # Swallowing these would make the caller delete a message that was never stored.
     monkeypatch.setenv("READINGS_TABLE", "missing")
