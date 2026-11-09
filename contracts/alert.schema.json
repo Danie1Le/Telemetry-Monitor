@@ -38,7 +38,7 @@
       "type": "string"
     },
     "closedAt": {
-      "description": "ts of the reading that returned to normal.",
+      "description": "Epoch millis derived from the data. Per rule: threshold, rate_of_change, drift and flatline = ts of the first reading back to normal; dropout = start of the first present second (second * 1000), since a corrupt-only second has no reading.",
       "$ref": "common.schema.json#/$defs/epochMillis"
     },
     "ttl": {
