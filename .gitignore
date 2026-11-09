@@ -43,3 +43,6 @@ Thumbs.db
 
 # Local progress notes
 docs/progress/
+
+# Generated from terraform output by scripts/aws-up.sh
+k8s/overlays/aws/aws.env

@@ -1,0 +1,21 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: telemetry
+resources:
+  - ../../base
+# Real SQS, DynamoDB and SNS: no emulators. Valkey comes from base.
+# aws.env is written by scripts/aws-up.sh from `terraform output`; see aws.env.example.
+# To render offline: cp k8s/overlays/aws/aws.env.example k8s/overlays/aws/aws.env
+# The aws-credentials Secret is created by scripts/aws-key.sh, not generated here.
+# Both ConfigMaps load the whole file; each service reads only the names it knows.
+# Table names (readings, alerts) are set in base and match Terraform.
+configMapGenerator:
+  - name: ingest-env
+    envs: [aws.env]
+    literals:
+      # Empty endpoints make the SDK use real AWS and the Secret's keys (a non-empty one means local static keys).
+      - TELEMETRY_SQS_ENDPOINT=
+      - TELEMETRY_DYNAMODB_ENDPOINT=
+  - name: processor-env
+    envs: [aws.env]
+# KEDA ScaledObject for the processor (#24) goes here, in resources.
