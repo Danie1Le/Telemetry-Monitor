@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "flightId": "20261109T140300Z-7f3a",
+  "phase": "ascent",
+  "engineId": "engine-1",
+  "second": 1794233040,
+  "readings": [
+    { "sensorId": "engine-1.chamber_temp", "ts": 1794233040000, "value": 3327.9, "unit": "K" },
+    { "sensorId": "engine-1.chamber_temp", "ts": 1794233040100, "value": 3270.7, "unit": "K" },
+    { "sensorId": "engine-1.tank_pressure", "ts": 1794233040000, "value": 341.2, "unit": "kPa" },
+    { "sensorId": "engine-1.tank_pressure", "ts": 1794233040100, "value": 339.8, "unit": "kPa" }
+  ]
+}

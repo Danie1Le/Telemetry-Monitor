@@ -1,0 +1,129 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Sensor config",
+  "description": "Schema for sensors.yaml. JSON Schema cannot compare fields, so services also check at startup that min < nominal < max, that threshold and rate_of_change graceSeconds are at least the longest rampSeconds, that drift graceSeconds is at least the longest rampSeconds plus drift windowSeconds, and that every rampSeconds is at most its phase's durationSeconds. The processor and the simulator each enforce these at startup (plus rateHz, grace and phase checks), because services share config files, not code.",
+  "type": "object",
+  "required": ["schemaVersion", "rateHz", "engineCount", "skew", "phases", "idleSecondsBetweenFlights", "rules", "sensorTypes"],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": { "$ref": "common.schema.json#/$defs/schemaVersion" },
+    "rateHz": { "type": "integer", "minimum": 1 },
+    "engineCount": { "type": "integer", "minimum": 1 },
+    "skew": {
+      "type": "object",
+      "required": ["staleSeconds", "futureSeconds"],
+      "additionalProperties": false,
+      "properties": {
+        "staleSeconds": { "$ref": "#/$defs/positiveSeconds" },
+        "futureSeconds": { "$ref": "#/$defs/positiveSeconds" }
+      }
+    },
+    "phases": {
+      "description": "Phases in flight order.",
+      "type": "array",
+      "prefixItems": [
+        { "$ref": "#/$defs/phase", "properties": { "name": { "const": "pre_launch" } } },
+        { "$ref": "#/$defs/phase", "properties": { "name": { "const": "ignition" } } },
+        { "$ref": "#/$defs/phase", "properties": { "name": { "const": "ascent" } } },
+        { "$ref": "#/$defs/phase", "properties": { "name": { "const": "engine_cutoff" } } }
+      ],
+      "minItems": 4,
+      "items": false
+    },
+    "idleSecondsBetweenFlights": { "$ref": "#/$defs/seconds" },
+    "rules": {
+      "type": "object",
+      "required": ["threshold", "rate_of_change", "drift", "dropout", "flatline"],
+      "additionalProperties": false,
+      "properties": {
+        "threshold": { "$ref": "#/$defs/graceOnly" },
+        "rate_of_change": { "$ref": "#/$defs/graceOnly" },
+        "drift": {
+          "type": "object",
+          "required": ["graceSeconds", "windowSeconds", "sustainSeconds"],
+          "additionalProperties": false,
+          "properties": {
+            "graceSeconds": { "$ref": "#/$defs/seconds" },
+            "windowSeconds": { "$ref": "#/$defs/positiveSeconds" },
+            "sustainSeconds": { "$ref": "#/$defs/positiveSeconds" }
+          }
+        },
+        "dropout": {
+          "type": "object",
+          "required": ["graceSeconds", "missingSeconds"],
+          "additionalProperties": false,
+          "properties": {
+            "graceSeconds": { "$ref": "#/$defs/seconds" },
+            "missingSeconds": { "$ref": "#/$defs/positiveSeconds" }
+          }
+        },
+        "flatline": {
+          "type": "object",
+          "required": ["graceSeconds", "unchangedSeconds"],
+          "additionalProperties": false,
+          "properties": {
+            "graceSeconds": { "$ref": "#/$defs/seconds" },
+            "unchangedSeconds": { "$ref": "#/$defs/positiveSeconds" }
+          }
+        }
+      }
+    },
+    "sensorTypes": {
+      "type": "object",
+      "propertyNames": { "pattern": "^[a-z_]+$" },
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "object",
+        "required": ["unit", "severity", "phases"],
+        "additionalProperties": false,
+        "properties": {
+          "unit": { "type": "string", "minLength": 1 },
+          "severity": { "enum": ["warning", "critical"] },
+          "phases": {
+            "type": "object",
+            "required": ["pre_launch", "ignition", "ascent", "engine_cutoff"],
+            "propertyNames": { "$ref": "common.schema.json#/$defs/phase" },
+            "additionalProperties": { "$ref": "#/$defs/limits" }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "seconds": { "type": "integer", "minimum": 0 },
+    "positiveSeconds": { "type": "integer", "minimum": 1 },
+    "phase": {
+      "type": "object",
+      "required": ["name", "durationSeconds", "rampSeconds"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "$ref": "common.schema.json#/$defs/phase" },
+        "durationSeconds": { "$ref": "#/$defs/positiveSeconds" },
+        "rampSeconds": { "$ref": "#/$defs/seconds" }
+      }
+    },
+    "graceOnly": {
+      "type": "object",
+      "required": ["graceSeconds"],
+      "additionalProperties": false,
+      "properties": { "graceSeconds": { "$ref": "#/$defs/seconds" } }
+    },
+    "limits": {
+      "type": "object",
+      "required": ["nominal", "noise", "min", "max", "maxRatePerSec", "driftTolerance"],
+      "additionalProperties": false,
+      "properties": {
+        "nominal": { "type": "number" },
+        "noise": {
+          "description": "Half-width of uniform noise. Must be > 0: the flatline rule relies on normal readings moving.",
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "min": { "type": "number" },
+        "max": { "type": "number" },
+        "maxRatePerSec": { "type": "number", "exclusiveMinimum": 0 },
+        "driftTolerance": { "type": "number", "exclusiveMinimum": 0 }
+      }
+    }
+  }
+}

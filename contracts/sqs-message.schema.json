@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SQS message",
+  "description": "Body of the SQS message ingest sends for each accepted batch. It holds the batch fields, the valid readings grouped by sensor, and per-sensor counts of rejected corrupt readings. A sensor that appears in `rejectedCounts` but not in `readings` is present but corrupt, never a dropout. Units are not repeated: ingest has already checked each one against sensors.yaml.",
+  "type": "object",
+  "required": ["schemaVersion", "flightId", "phase", "engineId", "second", "receivedAt", "readings", "rejectedCounts"],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": { "$ref": "common.schema.json#/$defs/schemaVersion" },
+    "flightId": { "$ref": "common.schema.json#/$defs/flightId" },
+    "phase": { "$ref": "common.schema.json#/$defs/phase" },
+    "engineId": { "$ref": "common.schema.json#/$defs/engineId" },
+    "second": { "$ref": "common.schema.json#/$defs/epochSecond" },
+    "receivedAt": {
+      "description": "Epoch milliseconds on ingest's clock when the batch arrived.",
+      "$ref": "common.schema.json#/$defs/epochMillis"
+    },
+    "readings": {
+      "description": "Valid readings keyed by sensorId.",
+      "type": "object",
+      "propertyNames": { "$ref": "common.schema.json#/$defs/sensorId" },
+      "additionalProperties": {
+        "type": "array",
+        "minItems": 1,
+        "items": {
+          "type": "object",
+          "required": ["ts", "value"],
+          "additionalProperties": false,
+          "properties": {
+            "ts": { "$ref": "common.schema.json#/$defs/epochMillis" },
+            "value": { "type": "number" }
+          }
+        }
+      }
+    },
+    "rejectedCounts": {
+      "description": "Corrupt readings dropped by ingest, keyed by sensorId. Sensors with none rejected are left out. A corrupt reading without a valid sensorId cannot be attributed, so it only counts in the `rejected` total of the HTTP response.",
+      "type": "object",
+      "propertyNames": { "$ref": "common.schema.json#/$defs/sensorId" },
+      "additionalProperties": { "type": "integer", "minimum": 1 }
+    }
+  }
+}

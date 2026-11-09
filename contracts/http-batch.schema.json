@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "HTTP batch",
+  "description": "Body of POST /readings: one batch, i.e. one engine's readings for one second of a flight. This schema checks the envelope only, and an envelope that fails it rejects the whole batch. Items of `readings` only have to be objects, so one corrupt reading (missing field, wrong type) cannot reject the batch. Ingest checks each item on its own against #/$defs/reading, then checks the unit against sensors.yaml and the timestamp against the stale/future skew limits, and drops each corrupt reading individually.",
+  "type": "object",
+  "required": ["schemaVersion", "flightId", "phase", "engineId", "second", "readings"],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": { "$ref": "common.schema.json#/$defs/schemaVersion" },
+    "flightId": { "$ref": "common.schema.json#/$defs/flightId" },
+    "phase": { "$ref": "common.schema.json#/$defs/phase" },
+    "engineId": { "$ref": "common.schema.json#/$defs/engineId" },
+    "second": {
+      "description": "Epoch second of the flight that this batch covers.",
+      "$ref": "common.schema.json#/$defs/epochSecond"
+    },
+    "readings": {
+      "type": "array",
+      "items": { "type": "object" }
+    }
+  },
+  "$defs": {
+    "reading": {
+      "description": "One reading. Ingest validates each item of `readings` against this; a failure makes that reading corrupt. Ingest also marks it corrupt unless: ts is within [second*1000, second*1000+999] (so stored offsets from `second` are 0-999); sensorId starts with `<engineId>.`; the sensor type is in sensors.yaml; unit matches that type; and ts is within the stale/future skew of ingest's clock (N/M). Unknown extra fields are ignored, not corrupt.",
+      "type": "object",
+      "required": ["sensorId", "ts", "value", "unit"],
+      "properties": {
+        "sensorId": { "$ref": "common.schema.json#/$defs/sensorId" },
+        "ts": {
+          "description": "Epoch milliseconds on the vehicle (simulator) clock.",
+          "$ref": "common.schema.json#/$defs/epochMillis"
+        },
+        "value": { "type": "number" },
+        "unit": { "type": "string" }
+      }
+    }
+  }
+}

@@ -1,0 +1,90 @@
+# Sensor config shared by the simulator, ingest and the processor.
+# Mounted into all three services; validated by contracts/sensors.schema.json.
+#
+# Normal behaviour per sensor: on a phase change the value ramps linearly from the
+# previous phase's nominal to the new nominal over that phase's rampSeconds, then
+# holds nominal plus uniform noise in [-noise, +noise]. Each flight starts at the
+# pre_launch nominal. Services never round values: they send and store the full
+# float, so flatline cannot fire on rounding of small noise.
+schemaVersion: 1
+
+rateHz: 10          # readings per second per sensor
+engineCount: 1      # raise for load tests; sensorId is engine-<n>.<type>
+
+# A reading is corrupt if its ts is more than staleSeconds behind ingest's clock
+# (N) or more than futureSeconds ahead of it (M).
+skew:
+  staleSeconds: 5
+  futureSeconds: 2
+
+# In flight order. A flight is ~3 minutes, then the simulator idles before the next one.
+phases:
+  - { name: pre_launch, durationSeconds: 30, rampSeconds: 0 }
+  - { name: ignition, durationSeconds: 10, rampSeconds: 2 }
+  - { name: ascent, durationSeconds: 120, rampSeconds: 5 }
+  - { name: engine_cutoff, durationSeconds: 20, rampSeconds: 3 }
+idleSecondsBetweenFlights: 10
+# Rule state (counters, last-seen) is keyed by flightId, so rules reset per flight
+# and the idle gap between flights never counts as a dropout.
+
+# graceSeconds: a rule does not fire for this long after a phase change. Threshold
+# and rate grace must cover the longest rampSeconds (5); drift grace also covers
+# one full window so the rolling mean holds no ramp readings.
+rules:
+  threshold: { graceSeconds: 5 }        # value outside [min, max]
+  rate_of_change: { graceSeconds: 5 }   # |delta| / dt between consecutive readings > maxRatePerSec
+  drift:                                # |rolling mean - nominal| > driftTolerance for sustainSeconds
+    graceSeconds: 15
+    windowSeconds: 10
+    sustainSeconds: 5
+  dropout:                              # sensor missing from its engine's batches
+    graceSeconds: 0                     # phase changes don't cause missing readings
+    missingSeconds: 3
+  flatline:                             # value unchanged although noise > 0
+    graceSeconds: 5
+    unchangedSeconds: 5
+
+# Per phase: maxRatePerSec is 30x noise (noise alone moves at most 20x noise per
+# second at 10 Hz). driftTolerance is 2x noise. min below 0 on zero-nominal
+# sensors leaves room for noise around zero.
+sensorTypes:
+  chamber_temp:
+    unit: K
+    severity: critical
+    phases:
+      pre_launch:    { nominal: 290,  noise: 1,  min: 270,  max: 310,  maxRatePerSec: 30,  driftTolerance: 2 }
+      ignition:      { nominal: 2800, noise: 30, min: 2600, max: 3100, maxRatePerSec: 900, driftTolerance: 60 }
+      ascent:        { nominal: 3300, noise: 30, min: 3100, max: 3600, maxRatePerSec: 900, driftTolerance: 60 }
+      engine_cutoff: { nominal: 600,  noise: 10, min: 400,  max: 900,  maxRatePerSec: 300, driftTolerance: 20 }
+  tank_pressure:
+    unit: kPa
+    severity: critical
+    phases:
+      pre_launch:    { nominal: 250, noise: 2, min: 230, max: 270, maxRatePerSec: 60, driftTolerance: 4 }
+      ignition:      { nominal: 350, noise: 2, min: 330, max: 370, maxRatePerSec: 60, driftTolerance: 4 }
+      ascent:        { nominal: 340, noise: 2, min: 320, max: 360, maxRatePerSec: 60, driftTolerance: 4 }
+      engine_cutoff: { nominal: 300, noise: 2, min: 280, max: 320, maxRatePerSec: 60, driftTolerance: 4 }
+  fuel_flow:
+    unit: kg/s
+    severity: warning
+    phases:
+      pre_launch:    { nominal: 0,   noise: 0.05, min: -0.5, max: 0.5, maxRatePerSec: 1.5, driftTolerance: 0.1 }
+      ignition:      { nominal: 150, noise: 2,    min: 130,  max: 170, maxRatePerSec: 60,  driftTolerance: 4 }
+      ascent:        { nominal: 250, noise: 3,    min: 225,  max: 275, maxRatePerSec: 90,  driftTolerance: 6 }
+      engine_cutoff: { nominal: 0,   noise: 0.05, min: -0.5, max: 0.5, maxRatePerSec: 1.5, driftTolerance: 0.1 }
+  valve_position:
+    unit: "%"
+    severity: warning
+    phases:
+      pre_launch:    { nominal: 0,  noise: 0.1, min: -1, max: 1,   maxRatePerSec: 3,  driftTolerance: 0.2 }
+      ignition:      { nominal: 60, noise: 0.5, min: 55, max: 65,  maxRatePerSec: 15, driftTolerance: 1 }
+      ascent:        { nominal: 95, noise: 0.5, min: 90, max: 100, maxRatePerSec: 15, driftTolerance: 1 }
+      engine_cutoff: { nominal: 0,  noise: 0.1, min: -1, max: 1,   maxRatePerSec: 3,  driftTolerance: 0.2 }
+  vibration:
+    unit: g
+    severity: warning
+    phases:
+      pre_launch:    { nominal: 0.05, noise: 0.01, min: 0, max: 0.2, maxRatePerSec: 0.3, driftTolerance: 0.02 }
+      ignition:      { nominal: 4,    noise: 0.5,  min: 1, max: 8,   maxRatePerSec: 15,  driftTolerance: 1 }
+      ascent:        { nominal: 3,    noise: 0.3,  min: 1, max: 6,   maxRatePerSec: 9,   driftTolerance: 0.6 }
+      engine_cutoff: { nominal: 0.5,  noise: 0.1,  min: 0, max: 2,   maxRatePerSec: 3,   driftTolerance: 0.2 }

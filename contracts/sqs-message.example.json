@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "flightId": "20261109T140300Z-7f3a",
+  "phase": "ascent",
+  "engineId": "engine-1",
+  "second": 1794233041,
+  "receivedAt": 1794233042035,
+  "readings": {
+    "engine-1.chamber_temp": [
+      { "ts": 1794233041000, "value": 3303.3 },
+      { "ts": 1794233041100, "value": 3294.1 }
+    ],
+    "engine-1.tank_pressure": [
+      { "ts": 1794233041100, "value": 340.4 }
+    ]
+  },
+  "rejectedCounts": {
+    "engine-1.tank_pressure": 1
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "flightId": "20261109T140300Z-7f3a",
+  "alertKey": "1794233050300#engine-1.tank_pressure#threshold",
+  "openedAt": 1794233050300,
+  "sensorId": "engine-1.tank_pressure",
+  "rule": "threshold",
+  "severity": "critical",
+  "phase": "ascent",
+  "peakValue": 412.7,
+  "detail": "tank_pressure 412.7 kPa above max 360 kPa for ascent",
+  "closedAt": 1794233053100,
+  "ttl": 1794837850
+}

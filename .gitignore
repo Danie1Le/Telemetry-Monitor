@@ -1,0 +1,45 @@
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+*.tfplan
+*.tfvars
+*.tfvars.json
+crash.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraform.tfstate.lock.info
+
+# Secrets and keys
+*.pem
+*.key
+.env
+.env.*
+!.env.example
+secrets/
+.aws/
+# Local k8s Secret manifests (IAM keys): name them *.secret.yaml
+k8s/**/*.secret.yaml
+
+# Python
+.venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+.coverage
+
+# Gradle / Java
+.gradle/
+build/
+
+# IDE / OS
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+
+# Local progress notes
+docs/progress/

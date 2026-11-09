@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Shared definitions",
+  "description": "Types shared by the other contracts. Referenced as common.schema.json#/$defs/<name>.",
+  "$defs": {
+    "schemaVersion": {
+      "description": "Contract version. A message with any other version is rejected (HTTP 400 at ingest, DLQ at the processor).",
+      "const": 1
+    },
+    "flightId": {
+      "description": "Flight id. Starts with the flight's UTC start time (basic ISO 8601) so ids sort by time, then a random suffix.",
+      "type": "string",
+      "pattern": "^[0-9]{8}T[0-9]{6}Z-[0-9a-f]{4,}$"
+    },
+    "phase": {
+      "type": "string",
+      "enum": ["pre_launch", "ignition", "ascent", "engine_cutoff"]
+    },
+    "engineId": {
+      "type": "string",
+      "pattern": "^engine-[1-9][0-9]*$"
+    },
+    "sensorId": {
+      "description": "<engineId>.<sensor type>, for example engine-1.tank_pressure.",
+      "type": "string",
+      "pattern": "^engine-[1-9][0-9]*\\.[a-z_]+$"
+    },
+    "epochSecond": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "epochMillis": {
+      "type": "integer",
+      "minimum": 0
+    }
+  }
+}
