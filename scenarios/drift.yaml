@@ -1,0 +1,5 @@
+# Vibration drifts upward from ascent hold (ascent runs 40-160 s; rule graces end by 55 s).
+# The drift rule must fire; threshold must not. The fault ramps back down and ends mid-ascent,
+# so rate_of_change must not fire on the return to normal.
+faults:
+  - { kind: slow_drift, engine: 1, sensor: vibration, startSecond: 60, durationSeconds: 30 }

@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Scenario",
+  "description": "Schema for scenarios/*.yaml: a timeline of faults the simulator injects into every flight. The simulator also checks at startup that each sensor is a type in sensors.yaml.",
+  "type": "object",
+  "required": ["faults"],
+  "additionalProperties": false,
+  "properties": {
+    "faults": { "type": "array", "items": { "$ref": "#/$defs/fault" } }
+  },
+  "$defs": {
+    "fault": {
+      "type": "object",
+      "required": ["kind", "engine", "sensor", "startSecond", "durationSeconds"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "enum": ["spike", "dropout", "stuck_value", "slow_drift"] },
+        "engine": { "description": "Engine number n of engine-<n>.", "type": "integer", "minimum": 1 },
+        "sensor": { "description": "Sensor type, a key of sensorTypes in sensors.yaml.", "type": "string", "pattern": "^[a-z_]+$" },
+        "startSecond": { "description": "Seconds from the flight's start.", "type": "integer", "minimum": 0 },
+        "durationSeconds": { "type": "integer", "minimum": 1 }
+      }
+    }
+  }
+}

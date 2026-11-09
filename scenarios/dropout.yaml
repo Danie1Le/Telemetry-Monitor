@@ -1,0 +1,4 @@
+# Tank pressure goes missing during ascent hold (ascent runs 40-160 s; rule graces end by 55 s).
+# It stays missing longer than rules.dropout.missingSeconds, so the dropout rule must fire.
+faults:
+  - { kind: dropout, engine: 1, sensor: tank_pressure, startSecond: 60, durationSeconds: 5 }

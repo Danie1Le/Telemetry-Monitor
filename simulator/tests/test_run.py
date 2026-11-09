@@ -1,14 +1,17 @@
 import logging
 import random
 from itertools import pairwise
+from pathlib import Path
 
 import pytest
 
 from simulator import __main__ as sim
 from simulator.contracts import load_sensors
+from simulator.faults import load_scenario
 from simulator.flight import flight_seconds
 
 START = 1_794_233_040
+SCENARIOS = Path(__file__).resolve().parents[2] / "scenarios"
 
 
 class Stop(Exception):
@@ -43,9 +46,9 @@ class Driver:
             raise ConnectionRefusedError
         self.sent.append(batch)
 
-    def run(self, cfg, seed=1):
+    def run(self, cfg, seed=1, faults=()):
         with pytest.raises(Stop):
-            sim.run(cfg, random.Random(seed), self.send, self.clock, self.sleep)
+            sim.run(cfg, random.Random(seed), self.send, self.clock, self.sleep, faults)
         return self.sent
 
 
@@ -87,6 +90,45 @@ def test_slow_sends_skip_missed_seconds_and_keep_looping(cfg):
     seconds = sorted({b["second"] for b in sent})
     assert len(seconds) >= 3
     assert all(b - a > 1 for a, b in pairwise(seconds))
+
+
+def test_scenario_drives_a_full_flight_and_repeats_each_flight(cfg):
+    cycle = flight_seconds(cfg) + cfg["idleSecondsBetweenFlights"]
+    clean = Driver(2 * cycle).run(cfg)
+    faults = load_scenario(SCENARIOS / "dropout.yaml", cfg)
+    faulted = Driver(2 * cycle).run(cfg, faults=faults)
+    assert len(faulted) == len(clean)
+    changed = [
+        (c["second"] - START, c["engineId"])
+        for c, f in zip(clean, faulted, strict=True)
+        if c != f
+    ]
+    assert changed == [
+        (start + s, "engine-1") for start in (0, cycle) for s in range(60, 65)
+    ]
+    for c, f in zip(clean, faulted, strict=True):
+        if c != f:
+            assert {r["sensorId"] for r in c["readings"]} - {
+                r["sensorId"] for r in f["readings"]
+            } == {"engine-1.tank_pressure"}
+
+
+def test_none_scenario_changes_nothing(cfg):
+    clean = Driver(flight_seconds(cfg)).run(cfg)
+    assert (
+        Driver(flight_seconds(cfg)).run(
+            cfg, faults=load_scenario(SCENARIOS / "none.yaml", cfg)
+        )
+        == clean
+    )
+
+
+def test_main_runs_the_scenario_from_env(monkeypatch):
+    seen = {}
+    monkeypatch.setenv("SCENARIO", str(SCENARIOS / "spike.yaml"))
+    monkeypatch.setattr(sim, "run", lambda *a, faults: seen.update(faults=faults))
+    sim.main()
+    assert [f["kind"] for f in seen["faults"]] == ["spike"]
 
 
 def test_startup_fails_on_bad_config(monkeypatch, cfg):

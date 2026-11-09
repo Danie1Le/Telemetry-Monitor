@@ -1,0 +1,4 @@
+# Fuel flow sticks during ascent hold (ascent runs 40-160 s; rule graces end by 55 s).
+# It stays stuck longer than rules.flatline.unchangedSeconds, so the flatline rule must fire.
+faults:
+  - { kind: stuck_value, engine: 1, sensor: fuel_flow, startSecond: 60, durationSeconds: 10 }

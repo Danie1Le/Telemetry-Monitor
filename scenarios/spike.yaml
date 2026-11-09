@@ -1,0 +1,4 @@
+# Chamber temperature spikes during ascent hold (ascent runs 40-160 s; rule graces end by 55 s).
+# The threshold and rate_of_change rules must fire.
+faults:
+  - { kind: spike, engine: 1, sensor: chamber_temp, startSecond: 60, durationSeconds: 2 }

@@ -22,8 +22,12 @@ def validator(name: str) -> Draft202012Validator:
     return Draft202012Validator(schema, registry=registry)
 
 
+def load_yaml(path: Path, schema: str) -> dict:
+    """Parse a YAML file and validate it against contracts/<schema>.schema.json."""
+    data = yaml.safe_load(path.read_text())
+    validator(schema).validate(data)
+    return data
+
+
 def load_sensors() -> dict:
-    """Parse the sensor config and validate it against sensors.schema.json."""
-    config = yaml.safe_load(SENSORS_CONFIG.read_text())
-    validator("sensors").validate(config)
-    return config
+    return load_yaml(SENSORS_CONFIG, "sensors")
