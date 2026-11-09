@@ -44,6 +44,12 @@ rules:
     graceSeconds: 5
     unchangedSeconds: 5
 
+# Minimum gap between critical-alert emails for one sensor. 600 s outlasts a ~3 min
+# flight, so a fault episode emails once per sensor. Under continuous faults that is up to
+# 4,320 emails/month per sensor; the 1,000/month budget (#11) assumes faults are
+# occasional (demo use).
+alertCooldownSeconds: 600
+
 # Per phase: maxRatePerSec is 30x noise (noise alone moves at most 20x noise per
 # second at 10 Hz). driftTolerance is 2x noise. min below 0 on zero-nominal
 # sensors leaves room for noise around zero.

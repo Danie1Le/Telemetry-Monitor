@@ -127,9 +127,60 @@ def _elasticmq(aws_env):
         yield SimpleNamespace(sqs=sqs, url=url, dlq=dlq)
 
 
+@pytest.fixture(scope="session")
+def _moto(aws_env):
+    # Same image as docker-compose.yml. One SQS queue subscribed to the topic is the inbox.
+    with (
+        DockerContainer("motoserver/moto:5.0.28")
+        .with_exposed_ports(5000)
+        .waiting_for(LogMessageWaitStrategy("Running on")) as container
+    ):
+        endpoint = _endpoint(container, 5000)
+        aws_env.setenv("AWS_ENDPOINT_URL_SNS", endpoint)
+        alerts._sns.cache_clear()
+        sns = boto3.client("sns", endpoint_url=endpoint)
+        sqs = boto3.client("sqs", endpoint_url=endpoint)
+        topic = sns.create_topic(Name="alerts")["TopicArn"]
+        aws_env.setenv("ALERTS_TOPIC_ARN", topic)
+        url = sqs.create_queue(QueueName="inbox")["QueueUrl"]
+        arn = sqs.get_queue_attributes(QueueUrl=url, AttributeNames=["QueueArn"])[
+            "Attributes"
+        ]["QueueArn"]
+        sns.subscribe(
+            TopicArn=topic,
+            Protocol="sqs",
+            Endpoint=arn,
+            Attributes={"RawMessageDelivery": "true"},
+        )
+        yield SimpleNamespace(sqs=sqs, url=url)
+        alerts._sns.cache_clear()
+
+
 @pytest.fixture
-def queues(_elasticmq, alerts_table):
-    """The queue and its DLQ, purged after each test. The loop also needs alerts_table."""
+def emails(_moto):
+    """Callable returning the bodies of the emails published since the last call."""
+
+    def drain() -> list[str]:
+        bodies = []
+        while messages := _moto.sqs.receive_message(
+            QueueUrl=_moto.url, MaxNumberOfMessages=10
+        ).get("Messages"):
+            for m in messages:
+                bodies.append(m["Body"])
+                _moto.sqs.delete_message(
+                    QueueUrl=_moto.url, ReceiptHandle=m["ReceiptHandle"]
+                )
+        return bodies
+
+    drain()
+    yield drain
+    drain()
+
+
+@pytest.fixture
+def queues(_elasticmq, alerts_table, emails):
+    """The queue and its DLQ, purged after each test. The loop also needs alerts_table
+    and a topic for the alert emails."""
     yield _elasticmq
     for url in (_elasticmq.url, _elasticmq.dlq):
         _elasticmq.sqs.purge_queue(QueueUrl=url)

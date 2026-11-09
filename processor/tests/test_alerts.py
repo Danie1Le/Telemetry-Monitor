@@ -1,6 +1,7 @@
 import json
 import threading
 from concurrent.futures import ThreadPoolExecutor
+from types import SimpleNamespace
 
 import pytest
 
@@ -63,6 +64,9 @@ class FakeValkey:
 
     def set(self, key, value, ex):
         self.data[key] = value
+
+    def exists(self, key):
+        return key in self.data
 
 
 @pytest.fixture
@@ -130,6 +134,76 @@ def test_a_failed_write_is_retried_by_the_redelivery(fake, monkeypatch):
     assert len(written) == len(published) == 2  # written once, then cleared
 
 
+def critical_open(sensor_id="engine-1.chamber_temp") -> dict:
+    return {
+        "event": "open",
+        "flightId": FLIGHT_ID,
+        "sensorId": sensor_id,
+        "rule": "threshold",
+        "severity": "critical",
+        "phase": "ascent",
+        "openedAt": MS + 10_000,
+        "peakValue": SPIKE,
+        "detail": "value above max",
+    }
+
+
+@pytest.fixture
+def sns(fake, monkeypatch):
+    """Sent emails as (Subject, Message); `fail` makes the next publish raise."""
+    sent, topic = [], SimpleNamespace(fail=False)
+
+    def publish(**kwargs):
+        if topic.fail:
+            raise ConnectionError("SNS unreachable")
+        assert kwargs["TopicArn"] == "arn:alerts"
+        sent.append((kwargs["Subject"], kwargs["Message"]))
+
+    monkeypatch.setenv("ALERTS_TOPIC_ARN", "arn:alerts")
+    monkeypatch.setattr(alerts, "_sns", lambda: SimpleNamespace(publish=publish))
+    return sent, topic
+
+
+def test_critical_open_emails_flight_sensor_rule_value_and_time(sns):
+    sent, _ = sns
+    alerts.notify(critical_open())
+    [(subject, body)] = sent
+    assert subject == "Critical alert: engine-1.chamber_temp threshold"
+    assert body.splitlines() == [
+        f"Flight: {FLIGHT_ID}",
+        "Sensor: engine-1.chamber_temp",
+        "Rule: threshold",
+        f"Value: {SPIKE}",
+        "Opened at: 2026-11-09T14:04:11+00:00",
+        "Detail: value above max",
+    ]
+
+
+def test_warning_never_emails(sns):
+    sent, _ = sns
+    alerts.notify({**critical_open("engine-1.fuel_flow"), "severity": "warning"})
+    assert sent == []
+
+
+def test_second_critical_in_cooldown_is_suppressed_but_another_sensor_emails(sns):
+    sent, _ = sns
+    alerts.notify(critical_open())
+    alerts.notify({**critical_open(), "rule": "rate_of_change"})
+    assert len(sent) == 1
+    alerts.notify(critical_open("engine-1.tank_pressure"))
+    assert len(sent) == 2
+
+
+def test_failed_publish_raises_and_the_retry_sends(sns):
+    sent, topic = sns
+    topic.fail = True
+    with pytest.raises(ConnectionError):
+        alerts.notify(critical_open())
+    topic.fail = False
+    alerts.notify(critical_open())  # no cooldown was set, so the retry sends
+    assert len(sent) == 1
+
+
 class FakeSqs:
     def __init__(self):
         self.calls = []
@@ -148,7 +222,7 @@ def sqs_message(body) -> dict:
 def test_handle_records_alerts_after_store_then_deletes(monkeypatch):
     calls = []
     monkeypatch.setattr(proc.readings, "store", lambda m, now: calls.append("store"))
-    monkeypatch.setattr(alerts, "record", lambda m: calls.append("record"))
+    monkeypatch.setattr(alerts, "record", lambda m, publish: calls.append("record"))
     sqs = FakeSqs()
 
     proc.handle(sqs, "q", "dlq", sqs_message(batch(0)))
@@ -157,7 +231,7 @@ def test_handle_records_alerts_after_store_then_deletes(monkeypatch):
 
 
 def test_handle_leaves_the_message_when_recording_alerts_fails(monkeypatch):
-    def fail(message):
+    def fail(message, publish):
         raise ConnectionError("Valkey unreachable")
 
     monkeypatch.setattr(proc.readings, "store", lambda m, now: None)
@@ -238,6 +312,20 @@ def test_spike_opens_and_closes_one_threshold_and_one_rate_alert(
     items = stored(alerts_table)
     assert without_detail(items) == expected_spike_alerts()
     assert all(i["detail"] for i in items)
+
+
+@pytest.mark.integration
+def test_spike_on_a_critical_sensor_emails_once_and_redelivery_does_not(
+    queues, table, emails
+):
+    deliver(queues, spike_flight())  # threshold and rate_of_change both open
+
+    [body] = emails()
+    assert f"Flight: {FLIGHT_ID}" in body
+    assert "Sensor: engine-1.chamber_temp" in body
+
+    deliver(queues, spike_flight())
+    assert emails() == []
 
 
 @pytest.mark.integration

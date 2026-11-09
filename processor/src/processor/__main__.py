@@ -32,7 +32,7 @@ def handle(sqs, queue_url: str, dlq_url: str, message: dict) -> None:
     try:
         body = json.loads(message["Body"])
         readings.store(body, int(time.time()))
-        alerts.record(body)
+        alerts.record(body, publish=alerts.notify)
     except (json.JSONDecodeError, ValidationError) as e:
         log.warning("message %s dead-lettered: %s", message["MessageId"], e)
         sqs.send_message(QueueUrl=dlq_url, MessageBody=message["Body"])

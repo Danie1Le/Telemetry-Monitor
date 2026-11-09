@@ -9,6 +9,7 @@ batch arrives to close it, and v1 has no timers (#8).
 
 import json
 import os
+from datetime import UTC, datetime
 from decimal import Decimal
 from functools import cache, partial
 
@@ -37,6 +38,11 @@ def _valkey():
 @cache
 def _table():
     return boto3.resource("dynamodb").Table(os.environ["ALERTS_TABLE"])
+
+
+@cache
+def _sns():
+    return boto3.client("sns")
 
 
 def _update(key: str, change):
@@ -114,6 +120,35 @@ def record(message: dict, publish=lambda event: None) -> None:
             if event["event"] == "open":
                 publish(event)
         _update(key, partial(_written, events))
+
+
+def notify(event: dict) -> None:
+    """Email a critical alert's open, at most once per sensor per cooldown.
+
+    The cooldown starts only after the publish, so a crash or failure before it never
+    loses the email: the redelivery sends it. Two racing processors may both send.
+    """
+    if event["severity"] != "critical":
+        return
+    key = f"cooldown:{event['sensorId']}"
+    if _valkey().exists(key):
+        return
+    opened = datetime.fromtimestamp(event["openedAt"] / 1000, UTC).isoformat()
+    _sns().publish(
+        TopicArn=os.environ["ALERTS_TOPIC_ARN"],
+        Subject=f"Critical alert: {event['sensorId']} {event['rule']}",
+        Message="\n".join(
+            [
+                f"Flight: {event['flightId']}",
+                f"Sensor: {event['sensorId']}",
+                f"Rule: {event['rule']}",
+                f"Value: {event['peakValue']}",
+                f"Opened at: {opened}",
+                f"Detail: {event['detail']}",
+            ]
+        ),
+    )
+    _valkey().set(key, 1, ex=load_sensors()["alertCooldownSeconds"])
 
 
 def _written(events, state):

@@ -3,7 +3,7 @@
   "title": "Sensor config",
   "description": "Schema for sensors.yaml. JSON Schema cannot compare fields, so services also check at startup that min < nominal < max, that threshold and rate_of_change graceSeconds are at least the longest rampSeconds, that drift graceSeconds is at least the longest rampSeconds plus drift windowSeconds, and that every rampSeconds is at most its phase's durationSeconds. The processor and the simulator each enforce these at startup (plus rateHz, grace and phase checks), because services share config files, not code.",
   "type": "object",
-  "required": ["schemaVersion", "rateHz", "engineCount", "skew", "phases", "idleSecondsBetweenFlights", "rules", "sensorTypes"],
+  "required": ["schemaVersion", "rateHz", "engineCount", "skew", "phases", "idleSecondsBetweenFlights", "alertCooldownSeconds", "rules", "sensorTypes"],
   "additionalProperties": false,
   "properties": {
     "schemaVersion": { "$ref": "common.schema.json#/$defs/schemaVersion" },
@@ -31,6 +31,10 @@
       "items": false
     },
     "idleSecondsBetweenFlights": { "$ref": "#/$defs/seconds" },
+    "alertCooldownSeconds": {
+      "description": "Minimum gap between critical-alert emails for one sensor.",
+      "$ref": "#/$defs/positiveSeconds"
+    },
     "rules": {
       "type": "object",
       "required": ["threshold", "rate_of_change", "drift", "dropout", "flatline"],
