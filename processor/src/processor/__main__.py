@@ -1,4 +1,5 @@
-"""Entry point: poll the queue, store each message's readings, then delete it."""
+"""Entry point: poll the queue, store each message's readings, record its alerts, then
+delete it."""
 
 import json
 import logging
@@ -11,7 +12,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import boto3
 from jsonschema import ValidationError
 
-from processor import readings
+from processor import alerts, readings
 from processor.contracts import load_sensors
 
 log = logging.getLogger("processor")
@@ -22,13 +23,16 @@ last_poll = time.monotonic()
 
 
 def handle(sqs, queue_url: str, dlq_url: str, message: dict) -> None:
-    """Store a message, or dead-letter it now if it can never be stored. Then delete it.
+    """Store a message and record its alerts, or dead-letter it now if it can never be
+    stored. Then delete it.
 
     Any other error propagates and the message stays on the queue, so SQS redelivers it
     and the redrive policy moves it to the DLQ after 3 receives.
     """
     try:
-        readings.store(json.loads(message["Body"]), int(time.time()))
+        body = json.loads(message["Body"])
+        readings.store(body, int(time.time()))
+        alerts.record(body)
     except (json.JSONDecodeError, ValidationError) as e:
         log.warning("message %s dead-lettered: %s", message["MessageId"], e)
         sqs.send_message(QueueUrl=dlq_url, MessageBody=message["Body"])

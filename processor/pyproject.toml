@@ -10,6 +10,7 @@ dependencies = [
     "boto3>=1.43.126",
     "jsonschema>=4.26.0",
     "pyyaml>=6.0.3",
+    "redis>=8.1.0",
     "referencing>=0.37.0",
 ]
 
