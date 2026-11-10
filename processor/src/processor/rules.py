@@ -91,7 +91,9 @@ def _outside_limits(reading: dict, lim: dict, state: dict):
 
 
 def _too_fast(reading: dict, lim: dict, state: dict):
-    if "lastTs" not in state:
+    # A baseline from inside grace may be the ramp's last reading, a step noise can push
+    # past the max: it only seeds the next rate, unless an alert is already open.
+    if "lastTs" not in state or (state.get("lastInGrace") and "openedAt" not in state):
         return None
     dt = reading["ts"] - state["lastTs"]
     rate = (reading["value"] - state["lastValue"]) * 1000 / dt
@@ -182,7 +184,7 @@ def _evaluate(rule, config, state, readings, ctx, offence):
         if in_grace:
             # A sustained run starts after grace, so openedAt never falls inside it.
             state.pop("runStart", None)
-        state |= {"lastTs": ts, "lastValue": value}
+        state |= {"lastTs": ts, "lastValue": value, "lastInGrace": in_grace}
         if "openedAt" in state:
             if found is None:
                 events.append(

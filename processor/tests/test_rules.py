@@ -203,6 +203,53 @@ def test_no_alert_opens_within_grace_after_a_phase_change(rule, opened_at):
     assert [e["openedAt"] for e in events if e["event"] == "open"] == opened_at
 
 
+def test_rate_takes_no_baseline_from_inside_grace():
+    # Ascent's ramp from ignition's nominal, ending as rate grace ends. Noise falls on the
+    # ramp's last reading and rises on the first after grace: 17 %/s against max 15 %/s.
+    valve = CONFIG["sensorTypes"]["valve_position"]["phases"]
+    ascent = valve["ascent"]
+    ramp = next(p["rampSeconds"] for p in CONFIG["phases"] if p["name"] == "ascent")
+    gap = valve["ignition"]["nominal"] - ascent["nominal"]
+    values = [
+        v + gap * max(0, 1 - i / 10 / ramp) for i, v in enumerate(normal(ascent, 10))
+    ]
+
+    events = run_rule(
+        rate_of_change, values, "engine-1.valve_position", seconds_in_phase=0
+    )
+
+    assert events == []
+
+
+def test_rate_fires_on_a_spike_starting_at_the_end_of_grace():
+    offset = ASCENT["max"] - ASCENT["min"] + ASCENT["maxRatePerSec"]
+    spike = [v + offset for v in normal(ASCENT, 2)]
+    grace = CONFIG["rules"]["rate_of_change"]["graceSeconds"]
+    values = normal(ASCENT, grace) + spike + normal(ASCENT, 2)
+
+    events = run_rule(rate_of_change, values, seconds_in_phase=0)
+
+    # The jump up is the first reading after grace, so only a baseline; the fall fires.
+    end = MS + (grace + 2) * 1000
+    assert [(e["event"], e["openedAt"]) for e in events] == [
+        ("open", end),
+        ("close", end),
+    ]
+
+
+def test_rate_alert_open_into_a_new_phase_stays_open_through_its_grace():
+    ignition = Context(FLIGHT_ID, "engine-1.chamber_temp", "ignition", 10, SECOND, 0)
+    ascent = Context(FLIGHT_ID, "engine-1.chamber_temp", "ascent", 0, SECOND + 2, 0)
+    state, _ = rate_of_change(CONFIG, {}, steady(0, 2800), ignition)
+    state, [opened] = rate_of_change(CONFIG, state, steady(1, 3500), ignition)
+
+    # Above ascent's max 3600 K too, so the alert stays open.
+    _, events = rate_of_change(CONFIG, state, steady(2, 3700), ascent)
+
+    assert opened["event"] == "open"
+    assert [(e["event"], e["peakValue"]) for e in events] == [("peak", 3700)]
+
+
 def test_readings_within_a_second_are_taken_in_ts_order():
     readings = [{"ts": MS + 100, "value": 4000}, {"ts": MS, "value": 4100}]
 
