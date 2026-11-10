@@ -1,9 +1,10 @@
 package dev.telemetry.ingest;
 
 import com.networknt.schema.InputFormat;
-import com.networknt.schema.JsonSchemaFactory;
+import com.networknt.schema.Schema;
 import com.networknt.schema.SchemaLocation;
-import com.networknt.schema.SpecVersion;
+import com.networknt.schema.SchemaRegistry;
+import com.networknt.schema.SpecificationVersion;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -47,15 +48,8 @@ public class BatchValidator {
       throws IOException {
     this.clock = clock;
     var yaml = Files.readString(Path.of(sensorsConfig));
-    // The schema has no $id, so its file location resolves the relative common.schema.json $ref.
     var errors =
-        JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V202012)
-            .getSchema(
-                SchemaLocation.of(
-                    Path.of(contractsDir, "sensors.schema.json")
-                        .toAbsolutePath()
-                        .toUri()
-                        .toString()))
+        contractSchema(Path.of(contractsDir, "sensors.schema.json"))
             .validate(yaml, InputFormat.YAML);
     if (!errors.isEmpty()) {
       throw new IllegalStateException("invalid sensors config " + sensorsConfig + ": " + errors);
@@ -71,6 +65,20 @@ public class BatchValidator {
     var skew = (Map<String, Integer>) (Object) config.get("skew");
     staleMillis = skew.get("staleSeconds") * 1000L;
     futureMillis = skew.get("futureSeconds") * 1000L;
+  }
+
+  /**
+   * Loads a 2020-12 contract schema from a local file. The schemas have no $id, so the file
+   * location resolves relative $refs such as common.schema.json. 3.x loads no file: URI unless
+   * remote fetching is on, so fetching is on but limited to file: IRIs: an http(s) $ref is refused.
+   */
+  static Schema contractSchema(Path file) {
+    return SchemaRegistry.withDefaultDialect(
+            SpecificationVersion.DRAFT_2020_12,
+            b ->
+                b.schemaLoader(
+                    l -> l.fetchRemoteResources().allow(iri -> "file".equals(iri.getScheme()))))
+        .getSchema(SchemaLocation.of(file.toAbsolutePath().toUri().toString()));
   }
 
   public Result validate(Batch b) {

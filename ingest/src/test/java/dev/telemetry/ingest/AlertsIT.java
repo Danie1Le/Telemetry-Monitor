@@ -2,7 +2,6 @@ package dev.telemetry.ingest;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -25,6 +24,7 @@ import software.amazon.awssdk.services.dynamodb.model.KeyType;
 import software.amazon.awssdk.services.dynamodb.model.ProvisionedThroughput;
 import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.ScalarAttributeType;
+import tools.jackson.databind.JsonNode;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class AlertsIT {
@@ -125,7 +125,7 @@ class AlertsIT {
   }
 
   List<String> keys(JsonNode alerts) {
-    return alerts.valueStream().map(a -> a.get("alertKey").asText()).toList();
+    return alerts.valueStream().map(a -> a.get("alertKey").asString()).toList();
   }
 
   @Test

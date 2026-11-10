@@ -1,18 +1,20 @@
 package dev.telemetry.ingest;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.networknt.schema.JsonSchema;
-import com.networknt.schema.JsonSchemaFactory;
-import com.networknt.schema.SchemaLocation;
-import com.networknt.schema.SpecVersion;
+import com.networknt.schema.InputFormat;
+import com.networknt.schema.Schema;
+import com.networknt.schema.SchemaException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import tools.jackson.databind.ObjectMapper;
 
 class ContractTest {
 
@@ -21,9 +23,24 @@ class ContractTest {
 
   // The schemas have no $id, so the file location is what resolves the relative common.schema.json
   // $ref.
-  static JsonSchema schema(String name) {
-    return JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V202012)
-        .getSchema(SchemaLocation.of(CONTRACTS.resolve(name).toUri().toString()));
+  static Schema schema(String name) {
+    return BatchValidator.contractSchema(CONTRACTS.resolve(name));
+  }
+
+  @Test
+  void httpRefIsRefusedNotFetched(@TempDir Path dir) throws Exception {
+    var file = dir.resolve("remote-ref.schema.json");
+    Files.writeString(
+        file,
+        """
+        {"$schema": "https://json-schema.org/draft/2020-12/schema",
+         "$ref": "https://example.com/evil.schema.json"}
+        """);
+    var e =
+        assertThrows(
+            SchemaException.class,
+            () -> BatchValidator.contractSchema(file).validate("{}", InputFormat.JSON));
+    assertTrue(e.getMessage().contains("is not allowed to be loaded"), e.getMessage());
   }
 
   @Test

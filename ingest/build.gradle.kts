@@ -28,7 +28,7 @@ dependencies {
 	implementation("software.amazon.awssdk:dynamodb")
 	implementation("org.springframework.boot:spring-boot-starter-actuator")
 	implementation("org.springframework.boot:spring-boot-starter-webmvc")
-	implementation("com.networknt:json-schema-validator:1.5.9")
+	implementation("com.networknt:json-schema-validator:3.0.9")
 	testImplementation("org.springframework.boot:spring-boot-starter-actuator-test")
 	testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
 	testImplementation("org.testcontainers:testcontainers")
