@@ -23,7 +23,7 @@ simulator --HTTP Batch--> ingest --> SQS --> processor --> DynamoDB (readings, a
 
 ## Prerequisites
 
-Docker, `kind`, `kubectl`, [uv](https://docs.astral.sh/uv/) (Python 3.14), and a JDK (the Gradle wrapper provisions Java 25). Terraform and the AWS CLI only for the AWS runbook.
+Docker, `kind`, `kubectl`, [uv](https://docs.astral.sh/uv/) (Python 3.15), and a JDK (the Gradle wrapper provisions Java 25). Terraform and the AWS CLI only for the AWS runbook.
 
 ## Local loop (kind)
 
