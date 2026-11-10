@@ -3,6 +3,7 @@ package dev.telemetry.ingest;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -32,19 +33,19 @@ class ReadingsController {
     this.queueUrl = queueUrl;
   }
 
-  @PostMapping("/readings")
+  // JSON only: the YAML converter on the classpath skips the strict spring.jackson.* binding.
+  @PostMapping(value = "/readings", consumes = MediaType.APPLICATION_JSON_VALUE)
   @ResponseStatus(HttpStatus.ACCEPTED)
   Map<String, Integer> readings(@RequestBody Batch batch) {
     var result = validator.validate(batch);
-    // A batch of only corrupt readings still goes out: those sensors are present, not dropouts.
-    if (!batch.readings().isEmpty()) {
-      try {
-        var body = json.writeValueAsString(result.message());
-        sqs.sendMessage(SendMessageRequest.builder().queueUrl(queueUrl).messageBody(body).build());
-      } catch (SdkException e) {
-        // Never 202 data that was lost; the simulator logs the failure.
-        throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "queue unavailable", e);
-      }
+    // Every batch goes out, even with no valid reading: the processor's rules then see that
+    // second, so a corrupt-only sensor is present and an absent one counts toward its dropout.
+    try {
+      var body = json.writeValueAsString(result.message());
+      sqs.sendMessage(SendMessageRequest.builder().queueUrl(queueUrl).messageBody(body).build());
+    } catch (SdkException e) {
+      // Never 202 data that was lost; the simulator logs the failure.
+      throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "queue unavailable", e);
     }
     return Map.of("accepted", result.accepted(), "rejected", result.rejected());
   }

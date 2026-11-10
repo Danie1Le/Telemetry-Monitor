@@ -111,8 +111,20 @@ class ReadingsControllerTest {
   }
 
   @Test
-  void emptyBatchSendsNothing() throws Exception {
+  void emptyBatchStillSendsOneMessageSoItsSensorsCountAsMissing() throws Exception {
     send(batch("1", "", "[]")).andExpect(status().isAccepted());
+    var message = ContractTest.JSON.readTree(sentBody());
+    assertEquals(1794233040L, message.get("second").asLong());
+    assertEquals(0, ContractTest.schema("sqs-message.schema.json").validate(message).size());
+  }
+
+  @Test
+  void yamlBatchIs415() throws Exception {
+    mvc.perform(
+            post("/readings")
+                .contentType(MediaType.APPLICATION_YAML)
+                .content("schemaVersion: \"1\"\nreadings: []\n"))
+        .andExpect(status().isUnsupportedMediaType());
     verifyNoInteractions(sqs);
   }
 

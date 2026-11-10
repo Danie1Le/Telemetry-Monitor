@@ -2,8 +2,11 @@ package dev.telemetry.ingest;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -12,6 +15,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.springframework.web.server.ResponseStatusException;
 
 class BatchValidatorTest {
@@ -23,10 +27,24 @@ class BatchValidatorTest {
   static BatchValidator validatorAt(long nowMillis) {
     try {
       return new BatchValidator(
-          "../sensors.yaml", Clock.fixed(Instant.ofEpochMilli(nowMillis), ZoneOffset.UTC));
+          "../sensors.yaml",
+          "../contracts",
+          Clock.fixed(Instant.ofEpochMilli(nowMillis), ZoneOffset.UTC));
     } catch (IOException e) {
       throw new IllegalStateException(e);
     }
+  }
+
+  @Test
+  void configThatBreaksTheSensorsSchemaFailsStartup(@TempDir Path dir) throws IOException {
+    var config = dir.resolve("sensors.yaml");
+    Files.writeString(
+        config, Files.readString(Path.of("../sensors.yaml")).replace("rateHz:", "rateHertz:"));
+    var e =
+        assertThrows(
+            IllegalStateException.class,
+            () -> new BatchValidator(config.toString(), "../contracts", Clock.systemUTC()));
+    assertTrue(e.getMessage().contains("rateHz"), e.getMessage());
   }
 
   static Map<String, Object> reading(Object sensorId, Object ts, Object value, Object unit) {

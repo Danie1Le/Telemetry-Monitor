@@ -673,6 +673,26 @@ def test_present_but_corrupt_sensor_raises_no_dropout(alerts_table):
 
 
 @pytest.mark.integration
+def test_an_empty_batch_stores_nothing_and_its_absent_sensors_drop_out(
+    queues, table, alerts_table
+):
+    every_type = list(CONFIG["sensorTypes"])
+    empty = [batch(n, missing=every_type) for n in range(2, 6)]
+    assert all(m["readings"] == m["rejectedCounts"] == {} for m in empty)
+
+    deliver(queues, [batch(0), batch(1), *empty, batch(6)])
+
+    stored_seconds = {int(i["second"]) for i in table.scan()["Items"]}
+    assert stored_seconds == {SECOND, SECOND + 1, SECOND + 6}
+    assert [
+        (i["sensorId"], i["rule"], i["openedAt"], i.get("closedAt"))
+        for i in stored(alerts_table)
+    ] == [
+        (f"engine-1.{t}", "dropout", MS + 2000, MS + 6000) for t in sorted(every_type)
+    ]
+
+
+@pytest.mark.integration
 def test_writes_apply_once_and_a_peak_only_if_further_from_nominal(alerts_table):
     key = {
         "flightId": FLIGHT_ID,

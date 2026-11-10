@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Sensor config",
-  "description": "Schema for sensors.yaml. JSON Schema cannot compare fields, so services also check at startup that min < nominal < max, that threshold and rate_of_change graceSeconds are at least the longest rampSeconds, that drift graceSeconds is at least the longest rampSeconds plus drift windowSeconds, and that every rampSeconds is at most its phase's durationSeconds. The processor and the simulator each enforce these at startup (plus rateHz, grace and phase checks), because services share config files, not code.",
+  "description": "Schema for sensors.yaml. JSON Schema cannot compare fields, so services also check at startup that min < nominal < max, that threshold and rate_of_change graceSeconds are at least the longest rampSeconds, that drift graceSeconds is at least the longest rampSeconds plus drift windowSeconds, and that every rampSeconds is at most its phase's durationSeconds. The simulator enforces these at startup (plus rateHz and phase checks); ingest and the processor validate only this schema at startup.",
   "type": "object",
   "required": ["schemaVersion", "rateHz", "engineCount", "skew", "phases", "idleSecondsBetweenFlights", "alertCooldownSeconds", "reorderWaitSeconds", "rules", "sensorTypes"],
   "additionalProperties": false,

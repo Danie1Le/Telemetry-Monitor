@@ -4,6 +4,9 @@ import random
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
+# Batch contract version; ingest accepts only this (common.schema.json const).
+BATCH_SCHEMA_VERSION = 1
+
 
 @dataclass(frozen=True)
 class Flight:
@@ -96,7 +99,7 @@ def make_batch(cfg: dict, flight: Flight, engine: int, second: int) -> dict | No
         for k in range(hz)
     ]
     return {
-        "schemaVersion": cfg["schemaVersion"],
+        "schemaVersion": BATCH_SCHEMA_VERSION,
         "flightId": flight.flight_id,
         "phase": cfg["phases"][i]["name"],
         "engineId": engine_id,

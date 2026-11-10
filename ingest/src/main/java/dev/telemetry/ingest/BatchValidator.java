@@ -1,5 +1,9 @@
 package dev.telemetry.ingest;
 
+import com.networknt.schema.InputFormat;
+import com.networknt.schema.JsonSchemaFactory;
+import com.networknt.schema.SchemaLocation;
+import com.networknt.schema.SpecVersion;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -36,13 +40,27 @@ public class BatchValidator {
   private final long staleMillis;
   private final long futureMillis;
 
-  BatchValidator(@Value("${telemetry.sensors-config}") String sensorsConfig, Clock clock)
+  BatchValidator(
+      @Value("${telemetry.sensors-config}") String sensorsConfig,
+      @Value("${telemetry.contracts-dir}") String contractsDir,
+      Clock clock)
       throws IOException {
     this.clock = clock;
-    Map<String, Map<String, Object>> config;
-    try (var in = Files.newBufferedReader(Path.of(sensorsConfig))) {
-      config = new Yaml().load(in);
+    var yaml = Files.readString(Path.of(sensorsConfig));
+    // The schema has no $id, so its file location resolves the relative common.schema.json $ref.
+    var errors =
+        JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V202012)
+            .getSchema(
+                SchemaLocation.of(
+                    Path.of(contractsDir, "sensors.schema.json")
+                        .toAbsolutePath()
+                        .toUri()
+                        .toString()))
+            .validate(yaml, InputFormat.YAML);
+    if (!errors.isEmpty()) {
+      throw new IllegalStateException("invalid sensors config " + sensorsConfig + ": " + errors);
     }
+    Map<String, Map<String, Object>> config = new Yaml().load(yaml);
     @SuppressWarnings("unchecked")
     var types = (Map<String, Map<String, Object>>) (Object) config.get("sensorTypes");
     types.forEach((type, def) -> units.put(type, (String) def.get("unit")));

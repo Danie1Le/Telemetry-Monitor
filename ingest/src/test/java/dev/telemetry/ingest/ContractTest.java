@@ -27,6 +27,12 @@ class ContractTest {
   }
 
   @Test
+  void sqsExampleMatchesSqsSchema() throws Exception {
+    var example = JSON.readTree(CONTRACTS.resolve("sqs-message.example.json").toFile());
+    assertEquals(List.of(), List.copyOf(schema("sqs-message.schema.json").validate(example)));
+  }
+
+  @Test
   void builtMessageMatchesSqsSchema() throws Exception {
     var example = JSON.readTree(CONTRACTS.resolve("http-batch.example.json").toFile());
     assertEquals(0, schema("http-batch.schema.json").validate(example).size());

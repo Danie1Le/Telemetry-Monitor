@@ -10,7 +10,9 @@ RUN ./gradlew --no-daemon bootJar -x test -x compileTestJava && mv build/libs/*.
 FROM eclipse-temurin:25-jre
 RUN useradd --system --uid 10001 app
 COPY --from=build /app/app.jar /app/app.jar
+COPY contracts /etc/telemetry/contracts
 # sensors.yaml is not baked in: mount it (ConfigMap) at this path.
-ENV TELEMETRY_SENSORS_CONFIG=/etc/telemetry/sensors.yaml
+ENV TELEMETRY_SENSORS_CONFIG=/etc/telemetry/sensors.yaml \
+    TELEMETRY_CONTRACTS_DIR=/etc/telemetry/contracts
 USER 10001
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]
