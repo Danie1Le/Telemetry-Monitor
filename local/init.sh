@@ -25,4 +25,4 @@ create_table() {
 
 create_table readings sensorId S second N 20 20
 create_table alerts flightId S alertKey S 5 5
-for t in alerts ops; do $sns create-topic --name "$t" >/dev/null; echo "topic $t ok"; done
+$sns create-topic --name alerts >/dev/null; echo "topic alerts ok"

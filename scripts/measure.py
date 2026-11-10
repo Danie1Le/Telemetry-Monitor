@@ -37,7 +37,6 @@ import gzip
 import json
 import os
 import random
-import secrets
 import statistics
 import subprocess
 import sys
@@ -50,6 +49,7 @@ from pathlib import Path
 from e2e import EXPECTED, kubectl, print_table, run_scenario
 
 from simulator.contracts import load_sensors
+from simulator.flight import start_flight
 
 ROOT = Path(__file__).resolve().parents[1]
 K6 = "grafana/k6:2.3.0"
@@ -159,7 +159,10 @@ def load(script: str, name: str, env: dict, raw=False, during=lambda k6: None):
     sampling, then samples on until that state is back. Returns the output prefix and the
     run's record."""
     prefix = new_prefix(name)
-    env = {"FLIGHT_ID": new_flight_id(), **{k: str(v) for k, v in env.items()}}
+    env = {
+        "FLIGHT_ID": start_flight(int(time.time()), random.Random()).flight_id,
+        **{k: str(v) for k, v in env.items()},
+    }
     # As the caller's user on Linux, so results/ stays writable; Docker Desktop maps it.
     user = [f"--user={os.getuid()}:{os.getgid()}"] if hasattr(os, "getuid") else []
     cmd = [
@@ -227,10 +230,6 @@ def load(script: str, name: str, env: dict, raw=False, during=lambda k6: None):
         "timeline": timeline,
     }
     return prefix, record
-
-
-def new_flight_id() -> str:
-    return f"{datetime.now(UTC):%Y%m%dT%H%M%SZ}-{secrets.token_hex(2)}"
 
 
 def scaling(record: dict) -> dict:

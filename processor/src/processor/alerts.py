@@ -16,7 +16,6 @@ import logging
 import os
 from contextlib import suppress
 from datetime import UTC, datetime
-from decimal import Decimal
 from functools import cache, partial
 
 import boto3
@@ -26,6 +25,7 @@ from redis.exceptions import LockNotOwnedError
 
 from processor import rules
 from processor.contracts import load_sensors, validator
+from processor.readings import to_dynamo
 
 log = logging.getLogger("processor")
 
@@ -134,8 +134,8 @@ def record(message: dict, publish=lambda event: None) -> None:
         _update(key, partial(_written, events))
 
 
-def buffer(message: dict, now: int) -> str:
-    """Hold a stored message's batch until `drain` reaches its second; returns its engine.
+def buffer(message: dict, now: int) -> None:
+    """Hold a stored message's batch until `drain` reaches its second.
 
     The caller then deletes the SQS message, so the batch lives only in Valkey, as the
     rule state does. A redelivery keeps the first buffered time (`now`, epoch seconds).
@@ -146,7 +146,6 @@ def buffer(message: dict, now: int) -> str:
     valkey.expire(key, STATE_TTL_SECONDS)
     # After the batch, so `_forget` never drops an engine with a batch buffered.
     valkey.sadd(BUFFERED, engine)
-    return engine
 
 
 def drain(engine: str, now: int, publish, dead_letter) -> None:
@@ -269,7 +268,7 @@ def _write(event: dict) -> bool:
             item = {**fields, "ttl": event["openedAt"] // 1000 + TTL_SECONDS}
             schema.validate(item)
             _table().put_item(
-                Item=_dynamo(item),
+                Item=to_dynamo(item),
                 ConditionExpression="attribute_not_exists(alertKey)",
             )
             return True
@@ -292,15 +291,10 @@ def _write(event: dict) -> bool:
             Key={"flightId": fields["flightId"], "alertKey": fields["alertKey"]},
             UpdateExpression=update,
             ConditionExpression=condition,
-            ExpressionAttributeValues=_dynamo(values),
+            ExpressionAttributeValues=to_dynamo(values),
         )
     except ClientError as e:
         if e.response["Error"]["Code"] != "ConditionalCheckFailedException":
             raise
         return False
     return True
-
-
-def _dynamo(value):
-    # DynamoDB rejects floats, so numbers go in as Decimal.
-    return json.loads(json.dumps(value), parse_float=Decimal)

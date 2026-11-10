@@ -17,6 +17,11 @@ def _table():
     return boto3.resource("dynamodb").Table(os.environ["READINGS_TABLE"])
 
 
+def to_dynamo(value):
+    # DynamoDB rejects floats, so numbers go in as Decimal.
+    return json.loads(json.dumps(value), parse_float=Decimal)
+
+
 def to_items(message: dict, now: int) -> list[dict]:
     """One `readings` item per sensor in an SQS message. `now` is epoch seconds.
 
@@ -42,7 +47,7 @@ def to_items(message: dict, now: int) -> list[dict]:
         }
         for sensor_id, readings in message["readings"].items()
     ]
-    # ts is only checked against ingest's clock, so offsets may fall outside the second.
+    # Ingest already keeps ts inside the second; the item schema re-checks offsets 0-999.
     for item in items:
         validator("readings-item").validate(item)
     return items
@@ -52,9 +57,8 @@ def store(message: dict, now: int) -> None:
     """Write each item once; a redelivered message is a no-op."""
     for item in to_items(message, now):
         try:
-            # DynamoDB rejects floats, so numbers go in as Decimal.
             _table().put_item(
-                Item=json.loads(json.dumps(item), parse_float=Decimal),
+                Item=to_dynamo(item),
                 ConditionExpression="attribute_not_exists(sensorId)",
             )
         except ClientError as e:

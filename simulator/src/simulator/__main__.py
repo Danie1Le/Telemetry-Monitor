@@ -72,7 +72,7 @@ def main() -> None:
     _, control = serve(cfg, int(os.environ.get("CONTROL_PORT", "8081")))
     run(
         cfg,
-        random.Random(os.environ.get("SEED") or None),
+        random.Random(),
         partial(post, url),
         faults=faults,
         control=control,
