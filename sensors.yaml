@@ -50,6 +50,12 @@ rules:
 # occasional (demo use).
 alertCooldownSeconds: 600
 
+# The processor runs the rules on each engine's batches in second order. A missing second
+# holds the later ones back until the earliest of them has waited this long, then the
+# rules treat it as absent. 40 s covers a crashed processor's batch: SQS redelivers it
+# after the 30 s visibility timeout, plus up to 10 s to receive and store it again.
+reorderWaitSeconds: 40
+
 # Per phase: maxRatePerSec is 30x noise (noise alone moves at most 20x noise per
 # second at 10 Hz). driftTolerance is 2x noise. min below 0 on zero-nominal
 # sensors leaves room for noise around zero.

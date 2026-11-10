@@ -1,5 +1,5 @@
-"""Entry point: poll the queue, store each message's readings, record its alerts, then
-delete it."""
+"""Entry point: poll the queue, store each message's readings, buffer its batch and delete
+it, then record the alerts of each engine's batches in second order."""
 
 import json
 import logging
@@ -23,7 +23,7 @@ last_poll = time.monotonic()
 
 
 def handle(sqs, queue_url: str, dlq_url: str, message: dict) -> None:
-    """Store a message and record its alerts, or dead-letter it now if it can never be
+    """Store a message and buffer its batch, or dead-letter it now if it can never be
     stored. Then delete it.
 
     Any other error propagates and the message stays on the queue, so SQS redelivers it
@@ -31,8 +31,9 @@ def handle(sqs, queue_url: str, dlq_url: str, message: dict) -> None:
     """
     try:
         body = json.loads(message["Body"])
-        readings.store(body, int(time.time()))
-        alerts.record(body, publish=alerts.notify)
+        now = int(time.time())
+        readings.store(body, now)
+        alerts.buffer(body, now)
     except (json.JSONDecodeError, ValidationError) as e:
         log.warning("message %s dead-lettered: %s", message["MessageId"], e)
         sqs.send_message(QueueUrl=dlq_url, MessageBody=message["Body"])
@@ -40,7 +41,9 @@ def handle(sqs, queue_url: str, dlq_url: str, message: dict) -> None:
 
 
 def poll(sqs, queue_url: str, dlq_url: str, wait_seconds: int = 20) -> None:
-    """One receive of up to 10 messages, each handled on its own."""
+    """One receive of up to 10 messages, each handled on its own, then a drain of every
+    engine with buffered batches before the next receive. A batch that keeps failing
+    there is dead-lettered as its stored message."""
     global last_poll
     response = sqs.receive_message(
         QueueUrl=queue_url, MaxNumberOfMessages=10, WaitTimeSeconds=wait_seconds
@@ -51,6 +54,14 @@ def poll(sqs, queue_url: str, dlq_url: str, wait_seconds: int = 20) -> None:
             handle(sqs, queue_url, dlq_url, message)
         except Exception:
             log.exception("message %s left for redelivery", message["MessageId"])
+
+    def dead_letter(body):
+        sqs.send_message(QueueUrl=dlq_url, MessageBody=json.dumps(body))
+
+    try:  # each engine's failure is logged inside; this catches Valkey being down
+        alerts.drain_all(int(time.time()), alerts.notify, dead_letter)
+    except Exception:
+        log.exception("draining buffered batches failed")
 
 
 class Health(BaseHTTPRequestHandler):

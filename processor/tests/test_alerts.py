@@ -4,14 +4,15 @@ from concurrent.futures import ThreadPoolExecutor
 from types import SimpleNamespace
 
 import pytest
+from redis.exceptions import LockNotOwnedError
 
 from processor import __main__ as proc
 from processor import alerts
 from processor.contracts import load_sensors, validator
 
 CONFIG = load_sensors()
-FLIGHT_ID = "20261109T140300Z-7f3a"
-SECOND = 1794233041  # first second of a test flight's ascent
+SECOND = 1794233041  # first second of a test flight, in ascent
+FLIGHT_ID = "20261109T140401Z-7f3a"  # starts at SECOND
 MS = SECOND * 1000
 CHAMBER = CONFIG["sensorTypes"]["chamber_temp"]["phases"]["ascent"]
 # Same shape as the simulator's spike fault.
@@ -48,12 +49,13 @@ def batch(n, spike=(), missing=(), corrupt=(), flight_id=FLIGHT_ID) -> dict:
 
 
 class FakeValkey:
-    """One process, so a transaction never conflicts."""
+    """One process, so a transaction never conflicts. Like Valkey, a hash or set with no
+    member is gone."""
 
     def __init__(self):
-        self.data = {}
+        self.data, self.locks = {}, {}
 
-    def transaction(self, apply, key, value_from_callable):
+    def transaction(self, apply, key, **kwargs):
         return apply(self)
 
     def get(self, key):
@@ -67,6 +69,50 @@ class FakeValkey:
 
     def exists(self, key):
         return key in self.data
+
+    def expire(self, key, seconds):
+        pass
+
+    def hsetnx(self, key, field, value):
+        self.data.setdefault(key, {}).setdefault(str(field).encode(), value)
+
+    def hgetall(self, key):
+        return dict(self.data.get(key, {}))
+
+    def hdel(self, key, *fields):
+        for field in fields:
+            self.data[key].pop(str(field).encode())
+        if not self.data[key]:
+            del self.data[key]
+
+    def sadd(self, key, member):
+        self.data.setdefault(key, set()).add(member.encode())
+
+    def smembers(self, key):
+        return set(self.data.get(key, ()))
+
+    def srem(self, key, member):
+        self.data.get(key, set()).discard(member.encode())
+        if not self.data.get(key):
+            self.data.pop(key, None)
+
+    def lock(self, name, timeout, blocking):
+        """A lock expires when a test deletes it from `locks`."""
+        locks = self.locks
+
+        class Lock:
+            def acquire(self):
+                return locks.setdefault(name, self) is self
+
+            def reacquire(self):
+                if locks.get(name) is not self:
+                    raise LockNotOwnedError
+
+            def release(self):
+                self.reacquire()
+                del locks[name]
+
+        return Lock()
 
 
 @pytest.fixture
@@ -219,28 +265,188 @@ def sqs_message(body) -> dict:
     return {"MessageId": "1", "ReceiptHandle": "r", "Body": json.dumps(body)}
 
 
-def test_handle_records_alerts_after_store_then_deletes(monkeypatch):
-    calls = []
-    monkeypatch.setattr(proc.readings, "store", lambda m, now: calls.append("store"))
-    monkeypatch.setattr(alerts, "record", lambda m, publish: calls.append("record"))
+def test_handle_stores_buffers_then_deletes(monkeypatch):
     sqs = FakeSqs()
+    monkeypatch.setattr(
+        proc.readings, "store", lambda m, now: sqs.calls.append("store")
+    )
+    monkeypatch.setattr(alerts, "buffer", lambda m, now: sqs.calls.append("buffer"))
 
     proc.handle(sqs, "q", "dlq", sqs_message(batch(0)))
-    assert calls == ["store", "record"]
-    assert sqs.calls == ["delete"]
+    assert sqs.calls == ["store", "buffer", "delete"]
 
 
-def test_handle_leaves_the_message_when_recording_alerts_fails(monkeypatch):
-    def fail(message, publish):
+def test_handle_leaves_the_message_when_buffering_fails(monkeypatch):
+    def fail(message, now):
         raise ConnectionError("Valkey unreachable")
 
     monkeypatch.setattr(proc.readings, "store", lambda m, now: None)
-    monkeypatch.setattr(alerts, "record", fail)
+    monkeypatch.setattr(alerts, "buffer", fail)
     sqs = FakeSqs()
 
     with pytest.raises(ConnectionError):
         proc.handle(sqs, "q", "dlq", sqs_message(batch(0)))
     assert sqs.calls == []
+
+
+# Reorder buffer: each engine's batches reach the rules in second order.
+
+WAIT = CONFIG["reorderWaitSeconds"]
+ENGINE = f"{FLIGHT_ID}:engine-1"
+
+
+def unexpected(message):
+    pytest.fail(f"second {message['second'] - SECOND} dead-lettered")
+
+
+def arrive(n, now, published, dead_letter=unexpected, **faults) -> None:
+    """Batch n of the flight arrives at `now`: handle buffers it, then poll drains."""
+    alerts.buffer(batch(n, **faults), now)
+    alerts.drain_all(now, published.append, dead_letter)
+
+
+def opened(published) -> list[tuple]:
+    return [(e["rule"], e["openedAt"]) for e in published]
+
+
+def cursor(valkey) -> int:
+    return int(valkey.data[f"cursor:{ENGINE}"])
+
+
+SPIKE_OPENS = [("threshold", MS + 10_000), ("rate_of_change", MS + 10_000)]
+SPIKE_11_OPENS = [("threshold", MS + 11_000), ("rate_of_change", MS + 11_000)]
+
+
+def test_batches_in_order_are_recorded_at_once(fake):
+    valkey, _ = fake
+    published = []
+    for n in range(10):
+        arrive(n, 0, published)
+    arrive(10, 0, published, spike=[10])
+
+    assert opened(published) == SPIKE_OPENS
+    assert cursor(valkey) == SECOND + 11
+    assert f"buffer:{ENGINE}" not in valkey.data
+    assert alerts.BUFFERED not in valkey.data
+
+
+def test_a_late_batch_within_the_wait_is_recorded_before_the_later_ones(fake):
+    published = []
+    for n in range(10):
+        arrive(n, 0, published)
+    for n in range(11, 16):  # second 10 is late, as after a processor crash
+        arrive(n, n, published)
+    assert published == []
+
+    arrive(10, 10 + WAIT - 1, published, spike=[10])
+
+    assert opened(published) == SPIKE_OPENS
+
+
+def test_a_missing_second_is_skipped_once_a_later_batch_has_waited(fake):
+    valkey, _ = fake
+    published = []
+    for n in range(10):
+        arrive(n, 0, published)
+    arrive(11, 100, published, spike=[11])
+    arrive(12, 100 + WAIT - 1, published)
+    assert published == []
+
+    arrive(13, 100 + WAIT, published)
+
+    assert opened(published) == SPIKE_11_OPENS
+    assert cursor(valkey) == SECOND + 14
+    arrive(10, 100 + WAIT, published, spike=[10])  # too late: dropped
+    assert len(published) == 2
+    assert f"buffer:{ENGINE}" not in valkey.data
+
+
+def test_a_batch_that_keeps_failing_is_dead_lettered_after_the_wait(fake, monkeypatch):
+    valkey, _ = fake
+    published, dead, real = [], [], alerts.detect
+
+    def detect(message):
+        if message["second"] == SECOND + 10:
+            raise ValueError("a rule bug")
+        return real(message)
+
+    monkeypatch.setattr(alerts, "detect", detect)
+    for n in range(10):
+        arrive(n, 0, published)
+    arrive(10, 0, published, spike=[10])
+    arrive(11, WAIT - 1, published, spike=[11])
+    assert published == []  # 10 is retried, and 11 waits behind it
+
+    arrive(12, WAIT, published, dead.append)
+
+    assert dead == [batch(10, spike=[10])]
+    assert opened(published) == SPIKE_11_OPENS
+    assert cursor(valkey) == SECOND + 13
+
+
+def test_poll_drains_a_tail_behind_a_gap_with_no_new_message(fake, monkeypatch):
+    valkey, _ = fake
+    published = []
+    for n in range(10):
+        arrive(n, 0, published)
+    arrive(11, 100, published, spike=[11])
+    monkeypatch.setattr(alerts, "notify", published.append)
+    monkeypatch.setattr(proc.time, "time", lambda: 100 + WAIT)
+    sqs = FakeSqs()
+    sqs.receive_message = lambda **kwargs: {}
+
+    proc.poll(sqs, "q", "dlq", wait_seconds=0)
+
+    assert opened(published) == SPIKE_11_OPENS
+    assert alerts.BUFFERED not in valkey.data
+
+
+def test_a_redelivered_batch_already_recorded_is_dropped(fake):
+    valkey, _ = fake
+    published = []
+    for n in range(11):
+        arrive(n, 0, published, spike=[10])
+
+    arrive(10, 1, published, spike=[10])
+
+    assert opened(published) == SPIKE_OPENS  # not opened twice
+    assert f"buffer:{ENGINE}" not in valkey.data
+
+
+def test_an_engine_another_processor_drains_is_left_to_it(fake):
+    valkey, _ = fake
+    published = []
+    for n in range(10):
+        arrive(n, 0, published)
+    other = valkey.lock(f"drain:{ENGINE}", timeout=10, blocking=False)
+    other.acquire()
+
+    arrive(10, 0, published, spike=[10])
+    assert published == []
+    other.release()
+    alerts.drain_all(0, published.append, unexpected)
+
+    assert opened(published) == SPIKE_OPENS
+
+
+def test_a_drainer_whose_lock_expired_never_moves_the_cursor_back(fake, monkeypatch):
+    valkey, _ = fake
+    published, real = [], alerts.detect
+    for n in range(10):
+        arrive(n, 0, published)
+
+    def slow(message):
+        monkeypatch.setattr(alerts, "detect", real)
+        valkey.locks.clear()  # the lock expires while second 10 is recorded
+        arrive(11, 0, published, spike=[11])  # another processor drains 10 and 11
+        return real(message)
+
+    alerts.buffer(batch(10), 0)
+    monkeypatch.setattr(alerts, "detect", slow)
+    alerts.drain(ENGINE, 0, published.append, unexpected)
+
+    assert opened(published) == SPIKE_11_OPENS
+    assert cursor(valkey) == SECOND + 12
 
 
 # Integration: real Valkey and DynamoDB Local.
@@ -326,6 +532,38 @@ def test_spike_on_a_critical_sensor_emails_once_and_redelivery_does_not(
 
     deliver(queues, spike_flight())
     assert emails() == []
+
+
+@pytest.mark.integration
+def test_spike_in_a_batch_redelivered_after_a_crash_still_alerts_once(
+    queues, table, alerts_table, emails, monkeypatch
+):
+    messages = [batch(n, spike=[10]) for n in range(16)]
+    deliver(queues, messages[:10])
+    real, buffered = alerts.buffer, []
+
+    def crash_on_first_10(message, now):
+        n = message["second"] - SECOND
+        buffered.append(n)
+        if n == 10 and buffered.count(10) == 1:
+            raise ConnectionError("killed after store, before buffer")
+        return real(message, now)
+
+    monkeypatch.setattr(alerts, "buffer", crash_on_first_10)
+    deliver(queues, messages[10:11])
+    for message in messages[11:]:
+        queues.sqs.send_message(QueueUrl=queues.url, MessageBody=json.dumps(message))
+    for _ in range(10):
+        proc.poll(queues.sqs, queues.url, queues.dlq, wait_seconds=1)
+        if len(stored(alerts_table)) == 2:
+            break
+
+    assert buffered.index(11) < buffered.index(10, 1)  # 10 was redelivered after 11
+    assert [(i["rule"], i["openedAt"]) for i in stored(alerts_table)] == [
+        ("rate_of_change", MS + 10_000),
+        ("threshold", MS + 10_000),
+    ]  # and no dropout
+    assert len(emails()) == 1
 
 
 @pytest.mark.integration
