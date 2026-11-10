@@ -10,10 +10,12 @@ spec:
     metadata:
       labels: { app: elasticmq }
     spec:
+      securityContext: { runAsNonRoot: true, seccompProfile: { type: RuntimeDefault } }
       containers:
         - name: elasticmq
           image: softwaremill/elasticmq-native:1.6.11
           imagePullPolicy: IfNotPresent
+          securityContext: { allowPrivilegeEscalation: false, capabilities: { drop: [ALL] } }
           ports:
             - { name: sqs, containerPort: 9324 }
           livenessProbe:
@@ -50,10 +52,13 @@ spec:
     metadata:
       labels: { app: dynamodb }
     spec:
+      # The image's user is named, not numeric; runAsNonRoot needs the uid.
+      securityContext: { runAsNonRoot: true, runAsUser: 1000, runAsGroup: 1000, seccompProfile: { type: RuntimeDefault } }
       containers:
         - name: dynamodb
           image: amazon/dynamodb-local:2.5.4
           imagePullPolicy: IfNotPresent
+          securityContext: { allowPrivilegeEscalation: false, capabilities: { drop: [ALL] } }
           args: ["-jar", "DynamoDBLocal.jar", "-inMemory", "-sharedDb"]
           ports:
             - { name: dynamodb, containerPort: 8000 }
@@ -87,10 +92,13 @@ spec:
     spec:
       # Service links would set MOTO_PORT=tcp://..., which moto reads as its port.
       enableServiceLinks: false
+      # The image runs as root; the in-memory emulator needs no root.
+      securityContext: { runAsNonRoot: true, runAsUser: 10001, runAsGroup: 10001, seccompProfile: { type: RuntimeDefault } }
       containers:
         - name: moto
           image: motoserver/moto:5.0.28
           imagePullPolicy: IfNotPresent
+          securityContext: { allowPrivilegeEscalation: false, capabilities: { drop: [ALL] } }
           ports:
             - { name: sns, containerPort: 5000 }
           livenessProbe:

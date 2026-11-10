@@ -11,10 +11,12 @@ spec:
     spec:
       # A 20s long poll plus the batch in hand must finish after SIGTERM.
       terminationGracePeriodSeconds: 45
+      securityContext: { runAsNonRoot: true, seccompProfile: { type: RuntimeDefault } }
       containers:
         - name: processor
           image: telemetry/processor:local
           imagePullPolicy: IfNotPresent
+          securityContext: { allowPrivilegeEscalation: false, capabilities: { drop: [ALL] } }
           env:
             - { name: READINGS_TABLE, value: readings }
             - { name: ALERTS_TABLE, value: alerts }

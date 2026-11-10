@@ -35,6 +35,8 @@ patches:
               - name: wait-for-tables
                 image: amazon/aws-cli:2.22.35
                 imagePullPolicy: IfNotPresent
+                # The image runs as root; the processor's image uid is not inherited.
+                securityContext: { runAsUser: 10001, allowPrivilegeEscalation: false, capabilities: { drop: [ALL] } }
                 args: [--endpoint-url, http://dynamodb:8000, dynamodb, wait, table-exists, --table-name, alerts]
                 env:
                   - { name: AWS_DEFAULT_REGION, value: us-west-2 }

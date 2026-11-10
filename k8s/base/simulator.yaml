@@ -9,10 +9,12 @@ spec:
     metadata:
       labels: { app: simulator }
     spec:
+      securityContext: { runAsNonRoot: true, seccompProfile: { type: RuntimeDefault } }
       containers:
         - name: simulator
           image: telemetry/simulator:local
           imagePullPolicy: IfNotPresent
+          securityContext: { allowPrivilegeEscalation: false, capabilities: { drop: [ALL] } }
           env:
             - { name: INGEST_URL, value: http://ingest:8080/readings }
           ports:

@@ -9,10 +9,12 @@ spec:
     metadata:
       labels: { app: ingest }
     spec:
+      securityContext: { runAsNonRoot: true, seccompProfile: { type: RuntimeDefault } }
       containers:
         - name: ingest
           image: telemetry/ingest:local
           imagePullPolicy: IfNotPresent
+          securityContext: { allowPrivilegeEscalation: false, capabilities: { drop: [ALL] } }
           # Overlays supply ingest-env (queue URL, endpoints) and aws-credentials.
           envFrom:
             - configMapRef: { name: ingest-env }

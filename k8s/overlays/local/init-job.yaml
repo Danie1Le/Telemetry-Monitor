@@ -8,10 +8,13 @@ spec:
   template:
     spec:
       restartPolicy: Never
+      # The image runs as root; any uid works for a one-shot CLI.
+      securityContext: { runAsNonRoot: true, runAsUser: 10001, runAsGroup: 10001, seccompProfile: { type: RuntimeDefault } }
       containers:
         - name: init
           image: amazon/aws-cli:2.22.35
           imagePullPolicy: IfNotPresent
+          securityContext: { allowPrivilegeEscalation: false, capabilities: { drop: [ALL] } }
           command: [sh, /init/init.sh]
           env:
             - { name: DYNAMODB_ENDPOINT, value: http://dynamodb:8000 }

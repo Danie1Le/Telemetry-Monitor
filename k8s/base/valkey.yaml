@@ -10,10 +10,13 @@ spec:
     metadata:
       labels: { app: valkey }
     spec:
+      # The image starts as root and drops to uid 999 itself; start as 999 directly.
+      securityContext: { runAsNonRoot: true, runAsUser: 999, runAsGroup: 999, seccompProfile: { type: RuntimeDefault } }
       containers:
         - name: valkey
           image: valkey/valkey:8.0.2
           imagePullPolicy: IfNotPresent
+          securityContext: { allowPrivilegeEscalation: false, capabilities: { drop: [ALL] } }
           ports:
             - { name: valkey, containerPort: 6379 }
           livenessProbe:
