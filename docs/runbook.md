@@ -8,16 +8,16 @@ Scripts handle steps 6, 7, 11 and 13. The other steps stay manual. Every resourc
 
 1. [ ] Create a **new AWS account** on the Free plan. Never upgrade it.
 2. [ ] Turn on MFA for the root login. Create the admin IAM user with MFA, then lock the root login away.
-3. [ ] Run `terraform/bootstrap` apply to create the $0.01 and $1 budgets.
+3. [ ] Create the $0.01 and $1 budgets: `cp terraform/bootstrap/terraform.tfvars.example terraform/bootstrap/terraform.tfvars`, set `alert_email` in it, then `terraform -chdir=terraform/bootstrap init` and `terraform -chdir=terraform/bootstrap apply`.
 
 ## One sitting (a few hours, never left running)
 
-4. [ ] Run `terraform/main` apply. *Record it.*
+4. [ ] Create the queues, tables, topics and demo IAM user: `cp terraform/main/terraform.tfvars.example terraform/main/terraform.tfvars`, set `alert_email` in it, then `terraform -chdir=terraform/main init` and `terraform -chdir=terraform/main apply`. Optional: save the output.
    - [ ] **4a.** Right after, back up the state outside the repo: `cp terraform/main/terraform.tfstate ~/telemetry-main.tfstate.bak`. Keep it until the cleanup check in step 13 passes (step 14 deletes it). A lost state file leaves resources that `terraform destroy` cannot see and that you would delete by hand.
 5. [ ] Confirm the SNS email subscriptions.
 6. [ ] Run `scripts/aws-key.sh`. It creates the demo access key and writes it into the Kubernetes Secret `aws-credentials`.
 7. [ ] Run `scripts/aws-up.sh`. It writes `k8s/overlays/aws/aws.env` from the Terraform outputs and runs `kubectl apply -k k8s/overlays/aws`.
-8. [ ] Run the demo: inject a Fault, see the Alert through `GET /alerts`, and receive the email. *Record it and turn it into a GIF.* The simulator takes one Fault on `POST /faults` (port 8081, inside the cluster). A Flight lasts 180 s, and the Rules need the ascent Phase (40 to 160 s after the Flight starts, Rule graces over by 55 s), so post between 60 and 150 s after the Flight starts. A Fault posted in the 10 s idle gap is lost.
+8. [ ] Run the demo: inject a Fault, see the Alert through `GET /alerts`, and receive the email. Optional: record it, for example as a GIF. The simulator takes one Fault on `POST /faults` (port 8081, inside the cluster). A Flight lasts 180 s, and the Rules need the ascent Phase (40 to 160 s after the Flight starts, Rule graces over by 55 s), so post between 60 and 150 s after the Flight starts. A Fault posted in the 10 s idle gap is lost.
    ```bash
    kubectl --context kind-telemetry -n telemetry port-forward svc/simulator 8081:8081 &
    pf=$!
@@ -29,7 +29,7 @@ Scripts handle steps 6, 7, 11 and 13. The other steps stay manual. Every resourc
    kill $pf
    ```
    The alert email goes to the SNS subscription from step 5. A 400 reply names the invalid field.
-9. [ ] Run the load test and show KEDA scaling. *Record it.* The numbers go in [RESULTS.md](../RESULTS.md). The `readings` table has 20 WCU and one Batch writes 5 items (one per Sensor, 1 WCU each), so the table takes at most 20 / 5 = 4 Batches/s before it throttles. Run at **3 Batches/s** (15 WCU), and scale the simulator to 0 so it adds no writes (its engine writes another 5 WCU/s). `scripts/measure.py` works on AWS unchanged: the cluster is still `kind`, only the queue, tables and topic are real. Run it from the repo root:
+9. [ ] Run the load test and show KEDA scaling. Optional: save the output. The numbers go in [RESULTS.md](../RESULTS.md). The `readings` table has 20 WCU and one Batch writes 5 items (one per Sensor, 1 WCU each), so the table takes at most 20 / 5 = 4 Batches/s before it throttles. Run at **3 Batches/s** (15 WCU), and scale the simulator to 0 so it adds no writes (its engine writes another 5 WCU/s). `scripts/measure.py` works on AWS unchanged: the cluster is still `kind`, only the queue, tables and topic are real. Run it from the repo root:
    ```bash
    start=$(date -u +%FT%TZ)
    kubectl --context kind-telemetry -n telemetry scale deploy/simulator --replicas=0
@@ -42,9 +42,9 @@ Scripts handle steps 6, 7, 11 and 13. The other steps stay manual. Every resourc
    done; done   # all four must be 0
    ```
    The run writes `results/<UTC date>/`. `measure.py` does not check throttling, so the loop above is the check. CloudWatch lags a few minutes: re-run the loop with a later `end` before trusting a 0. At 3 Batches/s the queue stays far below the KEDA target of 100 messages per replica, so expect one processor replica and no scale-up (`kubectl --context kind-telemetry -n telemetry get hpa -w`). Label the AWS numbers as AWS and the capped rate.
-10. [ ] Take console screenshots of the queue, the tables, the alarm, and the billing page at $0.
+10. [ ] Optionally, take console screenshots of the queue, the tables, the alarm, and the billing page at $0.
 11. [ ] Run `scripts/aws-down.sh` (`kubectl delete -k k8s/overlays/aws`), then `scripts/aws-key.sh --delete` to delete the Secret and the IAM access key.
-12. [ ] Run `terraform/main` destroy. *Record it.*
+12. [ ] Run `terraform/main` destroy. Optional: save the output.
 13. [ ] Run `scripts/aws-cleanup-check.sh`. It prints the account it checked and fails if any resource with the project tag is left in us-west-2 (the bootstrap budgets aside, kept until step 15), or if the demo IAM user or any of its access keys is left. It checks only the demo user's keys, because the check itself runs with the admin key. The admin user's keys are yours to manage. Then confirm the billing page shows $0.
 
 ## After

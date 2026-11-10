@@ -1,8 +1,9 @@
 # Results
 
-Every number here was measured, and links to its raw output in `results/<date>/`.
-The tools: `load/` (k6 scripts)
-and `scripts/measure.py` (see its docstring for each command and what it counts).
+Every number here was measured, and links to its raw output in `results/<date>/`. The tools:
+`load/` (k6 scripts) and `scripts/measure.py` (see its docstring for each command and what it
+counts). The AWS rows are pending: the one-time AWS run in [docs/runbook.md](docs/runbook.md)
+fills them in.
 
 ## Metrics
 
@@ -18,8 +19,8 @@ and `scripts/measure.py` (see its docstring for each command and what it counts)
 | <a id="scale-up"></a>KEDA scale-up: queue over target to second replica Ready | 21.6 s / 102.3 s (two ramps). In ramp 2 the queue passed 100 for one sample at 171 s and fell back before KEDA scaled; from its next crossing, 22.7 s | kind | 2026-11-10 | 8252afc | `measure.py scale --steps 5,10,20,40,80 --step-seconds 120`, run twice | i7-9700F, 16 GB host; Docker Desktop 8 CPU, 7.7 GiB | [ramp 1](results/2026-11-10/scale-021913.json) ([k6](results/2026-11-10/scale-021913-k6.txt)), [ramp 2](results/2026-11-10/scale-023501.json) ([k6](results/2026-11-10/scale-023501-k6.txt)) |
 | <a id="scale-down"></a>KEDA scale-down: queue drained to one replica | 44.6 s / 56.9 s (two ramps) | kind | 2026-11-10 | 8252afc | `measure.py scale --steps 5,10,20,40,80 --step-seconds 120`, run twice | i7-9700F, 16 GB host; Docker Desktop 8 CPU, 7.7 GiB | [ramp 1](results/2026-11-10/scale-021913.json) ([k6](results/2026-11-10/scale-021913-k6.txt)), [ramp 2](results/2026-11-10/scale-023501.json) ([k6](results/2026-11-10/scale-023501-k6.txt)) |
 | <a id="chaos"></a>Chaos: stored readings and alerts vs expected, pods killed | Pass: 15,000 / 15,000 stored `readings` items (3,000 batches x 5 sensors = 150,000 Readings) and 20 / 20 alerts (10 engines x threshold and rate_of_change), none missing or extra; 29 processor pods force-deleted; all 3,001 requests accepted (3,000 distinct batches, [see note](#chaos-note)); nothing dead-lettered | kind | 2026-11-10 | cb0fa8f | `measure.py chaos --duration 300` (10 batches/s, visibility timeout 5 s, one pod killed every 10 s), on a new cluster | i7-9700F, 16 GB host; Docker Desktop 8 CPU, 7.7 GiB | [results/2026-11-10/chaos-101220.json](results/2026-11-10/chaos-101220.json) ([k6](results/2026-11-10/chaos-101220-k6.txt)) |
-| <a id="aws-throughput"></a>Capped-rate 10 min run: readings/s, p95 | TBD | AWS | TBD | TBD | TBD | n/a | TBD |
-| <a id="aws-detection"></a>Detection time per fault: median / max (**3 runs per fault**) | TBD | AWS | TBD | TBD | TBD | n/a | TBD |
+| <a id="aws-throughput"></a>Capped-rate 10 min run: readings/s, p95 | Pending the AWS run in [docs/runbook.md](docs/runbook.md) | AWS | not run yet | n/a | n/a | n/a | n/a |
+| <a id="aws-detection"></a>Detection time per fault: median / max (**3 runs per fault**) | Pending the AWS run in [docs/runbook.md](docs/runbook.md) | AWS | not run yet | n/a | n/a | n/a | n/a |
 | <a id="coverage-rules"></a>Coverage, anomaly rules | 100% of statements (`rules.py`, 115) | local | 2026-11-10 | cb0fa8f | `cd processor && uv run pytest -q --cov=processor` (167 passed) | n/a | [results/2026-11-10/coverage-processor.txt](results/2026-11-10/coverage-processor.txt) |
 | <a id="coverage"></a>Coverage, overall | Processor 99% of statements (378); ingest 97% of instructions, 79% of branches (JaCoCo) | local | 2026-11-10 | cb0fa8f | `cd processor && uv run pytest -q --cov=processor` (167 passed); `cd ingest && ./gradlew test jacocoTestReport -q` (32 passed) | n/a | [processor](results/2026-11-10/coverage-processor.txt), [ingest](results/2026-11-10/coverage-ingest.txt) |
 

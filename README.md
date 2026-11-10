@@ -1,12 +1,28 @@
 # Telemetry Monitor
 
-A simulated launch vehicle streams Readings; the system detects Anomalies with Rules and raises Alerts. Terms (Reading, Batch, Flight, Phase, Fault, Alert...) are defined in [GLOSSARY.md](GLOSSARY.md). Design decisions: [docs/adr/](docs/adr/).
+Telemetry Monitor is a small streaming pipeline. A simulated launch vehicle posts sensor Readings over HTTP. An ingest service validates them and queues them on SQS. A processor stores them in DynamoDB, runs anomaly Rules and records Alerts, which `GET /alerts` serves. It runs on Kubernetes (kind) with the queue, tables and topics emulated locally, and the same manifests can target real AWS. It demonstrates a Java and Python service pair behind JSON-schema contracts, queue-depth autoscaling with KEDA, at-least-once processing made safe by idempotent writes and a reorder buffer, and load, detection-time and chaos measurements.
+
+CLAUDE.md and docs/agents/ configure the AI coding agents used to build the project.
+
+Terms (Reading, Batch, Flight, Phase, Fault, Alert...) are defined in [GLOSSARY.md](GLOSSARY.md). Design decisions: [docs/adr/](docs/adr/).
 
 ```
 simulator --HTTP Batch--> ingest --> SQS --> processor --> DynamoDB (readings, alerts) + SNS
                                                  |
                                        Valkey (Rule state)     GET /alerts (ingest) <-- DynamoDB
 ```
+
+## Results
+
+Measured on a local kind cluster. [RESULTS.md](RESULTS.md) has the hardware, commands and raw output.
+
+- [1,500 readings/s sustained for 10 minutes](RESULTS.md#throughput), with a [9.13 ms p95 ingest latency](RESULTS.md#p95).
+- [Ramp: no failures up to 2,000 readings/s](RESULTS.md#ramp), in 2-minute steps (a 10-minute run at that rate failed: see the [attempts](RESULTS.md#sustained-attempts)).
+- KEDA adds a processor replica [21.6 s and 102.3 s after the queue passes its target](RESULTS.md#scale-up) (in the second ramp the queue briefly crossed and fell back; 22.7 s from its next crossing) and [drains back to one in 44.6 s and 56.9 s](RESULTS.md#scale-down) (two ramps).
+- Alerts appear in `GET /alerts` [2.3 s (dropout)](RESULTS.md#detect-dropout), [5.4 s (stuck)](RESULTS.md#detect-stuck) and [11.5 s (drift)](RESULTS.md#detect-drift) after the fault starts (median of 10 runs, understated by up to about 1 s: [see the note](RESULTS.md#appeared)).
+- [No lost or extra readings or alerts](RESULTS.md#chaos) with 29 processor pods force-deleted during a 5-minute load.
+- [100% statement coverage of the anomaly rules](RESULTS.md#coverage-rules), and [99% of processor statements and 97% of ingest instructions](RESULTS.md#coverage).
+- AWS numbers are pending the run in [docs/runbook.md](docs/runbook.md).
 
 ## Layout
 
@@ -29,8 +45,8 @@ Docker, `kind`, `kubectl`, [uv](https://docs.astral.sh/uv/) (Python 3.15), and a
 
 ```bash
 scripts/kind-up.sh                                      # cluster, images, emulators; ingest at http://localhost:8080
-uv run --project simulator scripts/e2e.py [scenario]    # fly each Scenario, assert its Alerts
-uv run --project simulator scripts/measure.py --help    # load, detection and chaos measurements
+uv run --project simulator scripts/e2e.py [scenario ...]  # fly each Scenario (or those named), assert its Alerts
+uv run --project simulator scripts/measure.py <command>   # scale, sustained, detection, chaos; see its docstring
 scripts/kind-down.sh
 ```
 
@@ -38,7 +54,7 @@ scripts/kind-down.sh
 
 ## Run one service on the host
 
-`docker compose up -d` starts only the emulators: ElasticMQ (SQS, 9324), DynamoDB Local (8000), moto (SNS, 5000), Valkey (6379), and an `init` container that creates the `readings` and `alerts` tables and the `alerts` and `ops` topics. Ingest's defaults already point at them:
+`docker compose up -d` starts only the emulators: ElasticMQ (SQS, 9324), DynamoDB Local (8000), moto (SNS, 5000), Valkey (6379), and an `init` container that creates the `readings` and `alerts` tables and the `alerts` topic. Ingest's defaults already point at them:
 
 ```bash
 docker compose up -d
@@ -58,7 +74,7 @@ cd ingest && ./gradlew integrationTest
 
 ## CI
 
-`.github/workflows/ci.yml`: ruff, pytest with coverage gates (simulator, processor), Gradle checks (ingest), image builds, the `kind` e2e run, and terraform fmt/validate/tflint.
+`.github/workflows/ci.yml`: on every push, ruff, pytest with coverage gates (simulator, processor), Gradle checks (ingest) and terraform fmt/validate/tflint. On pull requests only: Testcontainers integration tests (processor), `integrationTest` (ingest), image builds and the `kind` e2e run.
 
 ## More
 
