@@ -42,7 +42,7 @@ spec:
         - name: sensors
           configMap: { name: sensors }
 ---
-# KEDA (installed by scripts/kind-up.sh) sizes the processor by queue depth (#6).
+# KEDA (installed by scripts/kind-up.sh) sizes the processor by queue depth.
 apiVersion: keda.sh/v1alpha1
 kind: ScaledObject
 metadata:

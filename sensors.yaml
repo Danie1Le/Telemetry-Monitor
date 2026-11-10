@@ -46,7 +46,7 @@ rules:
 
 # Minimum gap between critical-alert emails for one sensor. 600 s outlasts a ~3 min
 # flight, so a fault episode emails once per sensor. Under continuous faults that is up to
-# 4,320 emails/month per sensor; the 1,000/month budget (#11) assumes faults are
+# 4,320 emails/month per sensor; the 1,000/month budget assumes faults are
 # occasional (demo use).
 alertCooldownSeconds: 600
 

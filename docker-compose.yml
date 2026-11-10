@@ -1,4 +1,4 @@
-# Local emulators only. Real AWS is provisioned by Terraform (#9).
+# Local emulators only. Real AWS is provisioned by Terraform.
 services:
   elasticmq:
     image: softwaremill/elasticmq-native:1.6.11

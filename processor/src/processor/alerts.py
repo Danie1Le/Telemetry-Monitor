@@ -8,7 +8,7 @@ Each rule-state key also holds the events its rule raised but that are not yet w
 (`pending`). They are saved with the state in one atomic update and cleared only once
 written (and an open published), so a failed write is retried by the redelivery even though the rule then skips
 the already-seen readings. An alert still open when its flight ends stays open: no
-batch arrives to close it, and v1 has no timers (#8).
+batch arrives to close it, and v1 has no timers.
 """
 
 import json

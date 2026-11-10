@@ -1,6 +1,6 @@
 # Telemetry Monitor
 
-A simulated launch vehicle streams Readings; the system detects Anomalies with Rules and raises Alerts. Terms (Reading, Batch, Flight, Phase, Fault, Alert...) are defined in [GLOSSARY.md](GLOSSARY.md). Spec and decisions: GitHub issue #14 and the issues it links.
+A simulated launch vehicle streams Readings; the system detects Anomalies with Rules and raises Alerts. Terms (Reading, Batch, Flight, Phase, Fault, Alert...) are defined in [GLOSSARY.md](GLOSSARY.md). Design decisions: [docs/adr/](docs/adr/).
 
 ```
 simulator --HTTP Batch--> ingest --> SQS --> processor --> DynamoDB (readings, alerts) + SNS

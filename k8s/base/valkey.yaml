@@ -1,4 +1,4 @@
-# Rule state store (#8). Both overlays run it.
+# Rule state store. Both overlays run it.
 apiVersion: apps/v1
 kind: Deployment
 metadata:

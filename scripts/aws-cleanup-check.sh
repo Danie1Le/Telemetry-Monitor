@@ -18,7 +18,7 @@ left=0
 # Also fails fast on bad credentials, and shows which account was checked.
 account=$(aws sts get-caller-identity --query Account --output text)
 
-# The bootstrap budgets carry the same tag and are kept on purpose until the account is closed (#12).
+# The bootstrap budgets carry the same tag and are kept on purpose until the account is closed.
 arns=$(aws resourcegroupstaggingapi get-resources --region us-west-2 \
   --tag-filters Key=Project,Values=telemetry-monitor \
   --query 'ResourceTagMappingList[].ResourceARN' --output text)

@@ -4,9 +4,9 @@ Status: accepted
 
 ## Context
 
-Rule state is keyed by reading time, and each rule skips readings at or before the last one it saw (`lastTs`), because a standard SQS queue reorders and duplicates messages (#8). That keeps a redelivery from re-opening or closing an alert, but it also drops any batch that reaches the rules after a later second of the same engine.
+Rule state is keyed by reading time, and each rule skips readings at or before the last one it saw (`lastTs`), because a standard SQS queue reorders and duplicates messages. That keeps a redelivery from re-opening or closing an alert, but it also drops any batch that reaches the rules after a later second of the same engine.
 
-The chaos run of #29 hit exactly that on `kind`. A processor pod was hard-killed after storing a batch's readings but before recording its alerts. SQS redelivered the message after the 30 s visibility timeout. Meanwhile other pods had processed later seconds of the same engine, so the rules skipped the late batch's readings, and an anomaly confined to that batch never raised an alert (20 alerts expected, 18 raised). A delayed batch can also look like missing seconds to the dropout rule.
+The chaos run in [RESULTS.md](../../RESULTS.md) hit exactly that on `kind`. A processor pod was hard-killed after storing a batch's readings but before recording its alerts. SQS redelivered the message after the 30 s visibility timeout. Meanwhile other pods had processed later seconds of the same engine, so the rules skipped the late batch's readings, and an anomaly confined to that batch never raised an alert (20 alerts expected, 18 raised). A delayed batch can also look like missing seconds to the dropout rule.
 
 ## Decision
 
@@ -33,4 +33,4 @@ The rules run per flight and engine strictly in batch-second order, through a re
 
 - **Only graceful kills in the chaos run:** hides a real failure mode instead of fixing it.
 - **Document the limit:** leaves an anomaly in a redelivered batch undetected.
-- **SQS FIFO queue:** ordered per message group, but rejected in #7: it hides the idempotency story and caps throughput.
+- **SQS FIFO queue:** ordered per message group, but rejected: it hides the idempotency story and caps throughput.

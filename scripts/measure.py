@@ -1,4 +1,4 @@
-"""Measures the numbers in RESULTS.md (how each is measured: #13) on the kind cluster from
+"""Measures the numbers in RESULTS.md on the kind cluster from
 scripts/kind-up.sh. Every command writes its raw output to results/<UTC date>/.
 
   scale [--steps 5,10,20,40] [--step-seconds 120]

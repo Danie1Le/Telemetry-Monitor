@@ -29,7 +29,7 @@ Scripts handle steps 6, 7, 11 and 13. The other steps stay manual. Every resourc
    kill $pf
    ```
    The alert email goes to the SNS subscription from step 5. A 400 reply names the invalid field.
-9. [ ] Run the load test and show KEDA scaling. *Record it.* The numbers belong to #13. The `readings` table has 20 WCU and one Batch writes 5 items (one per Sensor, 1 WCU each), so the table takes at most 20 / 5 = 4 Batches/s before it throttles. Run at **3 Batches/s** (15 WCU), and scale the simulator to 0 so it adds no writes (its engine writes another 5 WCU/s). `scripts/measure.py` works on AWS unchanged: the cluster is still `kind`, only the queue, tables and topic are real. Run it from the repo root:
+9. [ ] Run the load test and show KEDA scaling. *Record it.* The numbers go in [RESULTS.md](../RESULTS.md). The `readings` table has 20 WCU and one Batch writes 5 items (one per Sensor, 1 WCU each), so the table takes at most 20 / 5 = 4 Batches/s before it throttles. Run at **3 Batches/s** (15 WCU), and scale the simulator to 0 so it adds no writes (its engine writes another 5 WCU/s). `scripts/measure.py` works on AWS unchanged: the cluster is still `kind`, only the queue, tables and topic are real. Run it from the repo root:
    ```bash
    start=$(date -u +%FT%TZ)
    kubectl --context kind-telemetry -n telemetry scale deploy/simulator --replicas=0
