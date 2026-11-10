@@ -1,0 +1,21 @@
+$ cd processor && uv run pytest -q --cov=processor
+167 passed in 76.02s (0:01:16)
+
+$ uv run coverage report
+Name                         Stmts   Miss  Cover
+------------------------------------------------
+src\processor\__init__.py        0      0   100%
+src\processor\__main__.py       50      4    92%
+src\processor\alerts.py        163      1    99%
+src\processor\contracts.py      20      0   100%
+src\processor\readings.py       30      0   100%
+src\processor\rules.py         115      0   100%
+------------------------------------------------
+TOTAL                          378      5    99%
+
+$ uv run coverage report --include='*/rules.py'
+Name                     Stmts   Miss  Cover
+--------------------------------------------
+src\processor\rules.py     115      0   100%
+--------------------------------------------
+TOTAL                      115      0   100%

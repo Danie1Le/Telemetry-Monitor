@@ -1,0 +1,62 @@
+chaos: k6 sustained.js {'FLIGHT_ID': '20261110T095430Z-c594', 'RATE': '10', 'DURATION': '300s', 'SPIKE_AT': '20'}
+  killed pod/processor-7c76d5bc9d-sxvp5
+  killed pod/processor-7c76d5bc9d-n47jd
+  killed pod/processor-7c76d5bc9d-zjgq7
+  killed pod/processor-7c76d5bc9d-bnkx4
+  killed pod/processor-7c76d5bc9d-84qvq
+  killed pod/processor-7c76d5bc9d-sdc2s
+  killed pod/processor-7c76d5bc9d-5czbl
+  killed pod/processor-7c76d5bc9d-hkmpv
+  killed pod/processor-7c76d5bc9d-pqx68
+  killed pod/processor-7c76d5bc9d-n6bc5
+  killed pod/processor-7c76d5bc9d-ctbzp
+  killed pod/processor-7c76d5bc9d-7ghcj
+  killed pod/processor-7c76d5bc9d-gs5c6
+  killed pod/processor-7c76d5bc9d-2mqzl
+  killed pod/processor-7c76d5bc9d-ggpp6
+  killed pod/processor-7c76d5bc9d-qsrlk
+  killed pod/processor-7c76d5bc9d-t2r2q
+  killed pod/processor-7c76d5bc9d-fcs5d
+  killed pod/processor-7c76d5bc9d-9hhvm
+  killed pod/processor-7c76d5bc9d-9qvrx
+  killed pod/processor-7c76d5bc9d-8xtb8
+  killed pod/processor-7c76d5bc9d-jt57g
+  killed pod/processor-7c76d5bc9d-hdkqq
+  killed pod/processor-7c76d5bc9d-27npx
+  killed pod/processor-7c76d5bc9d-sz954
+  killed pod/processor-7c76d5bc9d-rhgq7
+  killed pod/processor-7c76d5bc9d-dq5mb
+  killed pod/processor-7c76d5bc9d-fgncd
+  killed pod/processor-7c76d5bc9d-mzd9r
+Traceback (most recent call last):
+  File "<repo>\scripts\measure.py", line 492, in <module>
+    sys.exit(main())
+             ~~~~^^
+  File "<repo>\scripts\measure.py", line 488, in main
+    return chaos(args.duration, args.rate)
+  File "<repo>\scripts\measure.py", line 433, in chaos
+    got = json.loads(in_processor(STORED, record["env"]["FLIGHT_ID"]))
+                     ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<repo>\scripts\measure.py", line 101, in in_processor
+    return kubectl(
+        "exec",
+    ...<5 lines>...
+        *args,
+    )
+  File "<repo>\scripts\e2e.py", line 46, in kubectl
+    return subprocess.run(
+           ~~~~~~~~~~~~~~^
+        ["kubectl", "--context", "kind-telemetry", "-n", "telemetry", *args],
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+        text=True,
+        ^^^^^^^^^^
+    ).stdout
+    ^
+  File "<uv-python-dir>\cpython-3.14.10-windows-x86_64-none\Lib\subprocess.py", line 578, in run
+    raise CalledProcessError(retcode, process.args,
+                             output=stdout, stderr=stderr)
+subprocess.CalledProcessError: Command '['kubectl', '--context', 'kind-telemetry', '-n', 'telemetry', 'exec', 'deploy/processor', '--', 'python', '-c', "import json, os, sys, boto3\n\nfrom boto3.dynamodb.conditions import Attr, Key\nddb, flight = boto3.resource('dynamodb'), sys.argv[1]\ncount, page = 0, {'FilterExpression': Attr('flightId').eq(flight), 'Select': 'COUNT'}\nwhile True:\n    response = ddb.Table(os.environ['READINGS_TABLE']).scan(**page)\n    count += response['Count']\n    if 'LastEvaluatedKey' not in response:\n        break\n    page['ExclusiveStartKey'] = response['LastEvaluatedKey']\n# shortcut: one query page (1 MB) of alerts, far more than one flight raises.\nalerts = ddb.Table(os.environ['ALERTS_TABLE']).query(\n    KeyConditionExpression=Key('flightId').eq(flight))['Items']\nprint(json.dumps({'readings': count, 'alerts': sorted([a['sensorId'], a['rule']] for a in alerts)}))\n", '20261110T095430Z-c594']' returned non-zero exit status 1.
+exit=1
+
+[exited with code 0]

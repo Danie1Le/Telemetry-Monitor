@@ -1,0 +1,74 @@
+Initializing DynamoDB Local with the following configuration:
+Port:	8000
+InMemory:	true
+Version:	2.5.4
+DbPath:	null
+SharedDb:	true
+shouldDelayTransientStatuses:	false
+CorsParams:	null
+
+Nov 10, 2026 9:59:57 AM com.almworks.sqlite4java.Internal log
+WARNING: [sqlite] SQLiteDBAccess$20@426d25a9: job exception
+java.lang.OutOfMemoryError: Java heap space
+	at jdk.internal.reflect.GeneratedConstructorAccessor27.newInstance(Unknown Source)
+	at java.base/jdk.internal.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
+	at java.base/java.lang.reflect.Constructor.newInstanceWithCaller(Constructor.java:500)
+	at java.base/java.lang.reflect.Constructor.newInstance(Constructor.java:481)
+	at com.fasterxml.jackson.databind.introspect.AnnotatedConstructor.call(AnnotatedConstructor.java:119)
+	at com.fasterxml.jackson.databind.deser.std.StdValueInstantiator.createUsingDefault(StdValueInstantiator.java:278)
+	at com.fasterxml.jackson.databind.deser.BeanDeserializer.vanillaDeserialize(BeanDeserializer.java:314)
+	at com.fasterxml.jackson.databind.deser.BeanDeserializer.deserialize(BeanDeserializer.java:188)
+	at com.fasterxml.jackson.databind.deser.std.MapDeserializer._readAndBindStringKeyMap(MapDeserializer.java:609)
+	at com.fasterxml.jackson.databind.deser.std.MapDeserializer.deserialize(MapDeserializer.java:437)
+	at com.fasterxml.jackson.databind.deser.std.MapDeserializer.deserialize(MapDeserializer.java:32)
+	at com.fasterxml.jackson.databind.deser.DefaultDeserializationContext.readRootValue(DefaultDeserializationContext.java:322)
+	at com.fasterxml.jackson.databind.ObjectMapper._readMapAndClose(ObjectMapper.java:4593)
+	at com.fasterxml.jackson.databind.ObjectMapper.readValue(ObjectMapper.java:3626)
+	at com.amazonaws.services.dynamodbv2.local.shared.access.sqlite.SQLiteDBAccess$20.doWork(SQLiteDBAccess.java:2404)
+	at com.amazonaws.services.dynamodbv2.local.shared.access.sqlite.SQLiteDBAccess$20.doWork(SQLiteDBAccess.java:2041)
+	at com.amazonaws.services.dynamodbv2.local.shared.access.sqlite.AmazonDynamoDBOfflineSQLiteJob.job(AmazonDynamoDBOfflineSQLiteJob.java:117)
+	at com.almworks.sqlite4java.SQLiteJob.execute(SQLiteJob.java:372)
+	at com.almworks.sqlite4java.SQLiteQueue.executeJob(SQLiteQueue.java:534)
+	at com.almworks.sqlite4java.SQLiteQueue.queueFunction(SQLiteQueue.java:667)
+	at com.almworks.sqlite4java.SQLiteQueue.runQueue(SQLiteQueue.java:623)
+	at com.almworks.sqlite4java.SQLiteQueue.access$000(SQLiteQueue.java:77)
+	at com.almworks.sqlite4java.SQLiteQueue$1.run(SQLiteQueue.java:205)
+	at java.base/java.lang.Thread.run(Thread.java:840)
+
+Exception in thread "qtp593185976-16" java.lang.OutOfMemoryError: Java heap space
+Nov 10, 2026 10:00:21 AM com.almworks.sqlite4java.Internal log
+WARNING: [sqlite] SQLiteDBAccess$20@479c67c1: job exception
+java.lang.OutOfMemoryError: Java heap space
+
+Nov 10, 2026 10:00:37 AM com.almworks.sqlite4java.Internal log
+WARNING: [sqlite] SQLiteDBAccess$20@5e56ebcc: job exception
+java.lang.OutOfMemoryError: Java heap space
+
+Nov 10, 2026 10:01:01 AM com.almworks.sqlite4java.Internal log
+WARNING: [sqlite] SQLiteDBAccess$20@7e1b1b32: job exception
+java.lang.OutOfMemoryError: Java heap space
+
+Nov 10, 2026 10:01:18 AM com.almworks.sqlite4java.Internal log
+WARNING: [sqlite] SQLiteDBAccess$20@79068b69: job exception
+java.lang.OutOfMemoryError: Java heap space
+
+Nov 10, 2026 10:01:41 AM com.almworks.sqlite4java.Internal log
+WARNING: [sqlite] SQLiteDBAccess$20@5d0059e7: job exception
+java.lang.NoClassDefFoundError: Could not initialize class com.fasterxml.jackson.core.JsonLocation
+
+Nov 10, 2026 10:02:00 AM com.almworks.sqlite4java.Internal log
+WARNING: [sqlite] SQLiteDBAccess$20@12859e35: job exception
+java.lang.OutOfMemoryError: Java heap space
+
+Nov 10, 2026 10:02:24 AM com.almworks.sqlite4java.Internal log
+WARNING: [sqlite] SQLiteDBAccess$20@5f1502cf: job exception
+java.lang.OutOfMemoryError: Java heap space
+
+Nov 10, 2026 10:02:47 AM com.almworks.sqlite4java.Internal log
+WARNING: [sqlite] SQLiteDBAccess$20@85b7ab: job exception
+java.lang.OutOfMemoryError: Java heap space
+
+Nov 10, 2026 10:03:22 AM com.almworks.sqlite4java.Internal log
+WARNING: [sqlite] SQLiteDBAccess$20@3a569f6a: job exception
+java.lang.OutOfMemoryError: Java heap space
+

@@ -1,0 +1,456 @@
+{
+  "runs": 10,
+  "rows": [
+    {
+      "scenario": "spike",
+      "sensorId": "engine-1.chamber_temp",
+      "rule": "rate_of_change",
+      "opened": 0.0,
+      "appeared": 0.06103849411010742,
+      "run": 1
+    },
+    {
+      "scenario": "spike",
+      "sensorId": "engine-1.chamber_temp",
+      "rule": "threshold",
+      "opened": 0.0,
+      "appeared": 0.06103849411010742,
+      "run": 1
+    },
+    {
+      "scenario": "spike",
+      "sensorId": "engine-1.chamber_temp",
+      "rule": "rate_of_change",
+      "opened": 0.0,
+      "appeared": -1.0769624710083008,
+      "run": 2
+    },
+    {
+      "scenario": "spike",
+      "sensorId": "engine-1.chamber_temp",
+      "rule": "threshold",
+      "opened": 0.0,
+      "appeared": -1.0769624710083008,
+      "run": 2
+    },
+    {
+      "scenario": "spike",
+      "sensorId": "engine-1.chamber_temp",
+      "rule": "rate_of_change",
+      "opened": 0.0,
+      "appeared": -0.7318661212921143,
+      "run": 3
+    },
+    {
+      "scenario": "spike",
+      "sensorId": "engine-1.chamber_temp",
+      "rule": "threshold",
+      "opened": 0.0,
+      "appeared": -0.7318661212921143,
+      "run": 3
+    },
+    {
+      "scenario": "spike",
+      "sensorId": "engine-1.chamber_temp",
+      "rule": "rate_of_change",
+      "opened": 0.0,
+      "appeared": -0.38532161712646484,
+      "run": 4
+    },
+    {
+      "scenario": "spike",
+      "sensorId": "engine-1.chamber_temp",
+      "rule": "threshold",
+      "opened": 0.0,
+      "appeared": -0.38532161712646484,
+      "run": 4
+    },
+    {
+      "scenario": "spike",
+      "sensorId": "engine-1.chamber_temp",
+      "rule": "rate_of_change",
+      "opened": 0.0,
+      "appeared": -1.045919418334961,
+      "run": 5
+    },
+    {
+      "scenario": "spike",
+      "sensorId": "engine-1.chamber_temp",
+      "rule": "threshold",
+      "opened": 0.0,
+      "appeared": -1.045919418334961,
+      "run": 5
+    },
+    {
+      "scenario": "spike",
+      "sensorId": "engine-1.chamber_temp",
+      "rule": "rate_of_change",
+      "opened": 0.0,
+      "appeared": -0.7439913749694824,
+      "run": 6
+    },
+    {
+      "scenario": "spike",
+      "sensorId": "engine-1.chamber_temp",
+      "rule": "threshold",
+      "opened": 0.0,
+      "appeared": -0.7439913749694824,
+      "run": 6
+    },
+    {
+      "scenario": "spike",
+      "sensorId": "engine-1.chamber_temp",
+      "rule": "rate_of_change",
+      "opened": 0.0,
+      "appeared": -0.3323020935058594,
+      "run": 7
+    },
+    {
+      "scenario": "spike",
+      "sensorId": "engine-1.chamber_temp",
+      "rule": "threshold",
+      "opened": 0.0,
+      "appeared": -0.3323020935058594,
+      "run": 7
+    },
+    {
+      "scenario": "spike",
+      "sensorId": "engine-1.chamber_temp",
+      "rule": "rate_of_change",
+      "opened": 0.0,
+      "appeared": -0.9696803092956543,
+      "run": 8
+    },
+    {
+      "scenario": "spike",
+      "sensorId": "engine-1.chamber_temp",
+      "rule": "threshold",
+      "opened": 0.0,
+      "appeared": -0.9696803092956543,
+      "run": 8
+    },
+    {
+      "scenario": "spike",
+      "sensorId": "engine-1.chamber_temp",
+      "rule": "rate_of_change",
+      "opened": 0.0,
+      "appeared": -0.6533088684082031,
+      "run": 9
+    },
+    {
+      "scenario": "spike",
+      "sensorId": "engine-1.chamber_temp",
+      "rule": "threshold",
+      "opened": 0.0,
+      "appeared": -0.6533088684082031,
+      "run": 9
+    },
+    {
+      "scenario": "spike",
+      "sensorId": "engine-1.chamber_temp",
+      "rule": "rate_of_change",
+      "opened": 0.0,
+      "appeared": -0.2459573745727539,
+      "run": 10
+    },
+    {
+      "scenario": "spike",
+      "sensorId": "engine-1.chamber_temp",
+      "rule": "threshold",
+      "opened": 0.0,
+      "appeared": -0.2459573745727539,
+      "run": 10
+    },
+    {
+      "scenario": "dropout",
+      "sensorId": "engine-1.tank_pressure",
+      "rule": "dropout",
+      "opened": 0.0,
+      "appeared": 2.2198188304901123,
+      "run": 1
+    },
+    {
+      "scenario": "dropout",
+      "sensorId": "engine-1.tank_pressure",
+      "rule": "dropout",
+      "opened": 0.0,
+      "appeared": 2.5397727489471436,
+      "run": 2
+    },
+    {
+      "scenario": "dropout",
+      "sensorId": "engine-1.tank_pressure",
+      "rule": "dropout",
+      "opened": 0.0,
+      "appeared": 2.8022027015686035,
+      "run": 3
+    },
+    {
+      "scenario": "dropout",
+      "sensorId": "engine-1.tank_pressure",
+      "rule": "dropout",
+      "opened": 0.0,
+      "appeared": 2.454526424407959,
+      "run": 5
+    },
+    {
+      "scenario": "dropout",
+      "sensorId": "engine-1.tank_pressure",
+      "rule": "dropout",
+      "opened": 0.0,
+      "appeared": 2.8096752166748047,
+      "run": 6
+    },
+    {
+      "scenario": "dropout",
+      "sensorId": "engine-1.tank_pressure",
+      "rule": "dropout",
+      "opened": 0.0,
+      "appeared": 2.3029391765594482,
+      "run": 7
+    },
+    {
+      "scenario": "dropout",
+      "sensorId": "engine-1.tank_pressure",
+      "rule": "dropout",
+      "opened": 0.0,
+      "appeared": 2.6057167053222656,
+      "run": 8
+    },
+    {
+      "scenario": "dropout",
+      "sensorId": "engine-1.tank_pressure",
+      "rule": "dropout",
+      "opened": 0.0,
+      "appeared": 1.9293394088745117,
+      "run": 9
+    },
+    {
+      "scenario": "dropout",
+      "sensorId": "engine-1.tank_pressure",
+      "rule": "dropout",
+      "opened": 0.0,
+      "appeared": 2.3410754203796387,
+      "run": 10
+    },
+    {
+      "scenario": "stuck",
+      "sensorId": "engine-1.fuel_flow",
+      "rule": "flatline",
+      "opened": 0.0,
+      "appeared": 5.747570276260376,
+      "run": 1
+    },
+    {
+      "scenario": "stuck",
+      "sensorId": "engine-1.fuel_flow",
+      "rule": "flatline",
+      "opened": 0.0,
+      "appeared": 5.174645900726318,
+      "run": 2
+    },
+    {
+      "scenario": "stuck",
+      "sensorId": "engine-1.fuel_flow",
+      "rule": "flatline",
+      "opened": 0.0,
+      "appeared": 5.52569317817688,
+      "run": 3
+    },
+    {
+      "scenario": "stuck",
+      "sensorId": "engine-1.fuel_flow",
+      "rule": "flatline",
+      "opened": 0.0,
+      "appeared": 4.969144105911255,
+      "run": 4
+    },
+    {
+      "scenario": "stuck",
+      "sensorId": "engine-1.fuel_flow",
+      "rule": "flatline",
+      "opened": 0.0,
+      "appeared": 5.422921895980835,
+      "run": 5
+    },
+    {
+      "scenario": "stuck",
+      "sensorId": "engine-1.fuel_flow",
+      "rule": "flatline",
+      "opened": 0.0,
+      "appeared": 5.758821725845337,
+      "run": 6
+    },
+    {
+      "scenario": "stuck",
+      "sensorId": "engine-1.fuel_flow",
+      "rule": "flatline",
+      "opened": 0.0,
+      "appeared": 5.092020750045776,
+      "run": 7
+    },
+    {
+      "scenario": "stuck",
+      "sensorId": "engine-1.fuel_flow",
+      "rule": "flatline",
+      "opened": 0.0,
+      "appeared": 5.499868392944336,
+      "run": 8
+    },
+    {
+      "scenario": "stuck",
+      "sensorId": "engine-1.fuel_flow",
+      "rule": "flatline",
+      "opened": 0.0,
+      "appeared": 4.937396287918091,
+      "run": 9
+    },
+    {
+      "scenario": "stuck",
+      "sensorId": "engine-1.fuel_flow",
+      "rule": "flatline",
+      "opened": 0.0,
+      "appeared": 5.3537373542785645,
+      "run": 10
+    },
+    {
+      "scenario": "drift",
+      "sensorId": "engine-1.vibration",
+      "rule": "drift",
+      "opened": 8.0,
+      "appeared": 11.88265609741211,
+      "run": 1
+    },
+    {
+      "scenario": "drift",
+      "sensorId": "engine-1.vibration",
+      "rule": "drift",
+      "opened": 8.0,
+      "appeared": 11.38100528717041,
+      "run": 2
+    },
+    {
+      "scenario": "drift",
+      "sensorId": "engine-1.vibration",
+      "rule": "drift",
+      "opened": 8.0,
+      "appeared": 11.851777791976929,
+      "run": 3
+    },
+    {
+      "scenario": "drift",
+      "sensorId": "engine-1.vibration",
+      "rule": "drift",
+      "opened": 8.0,
+      "appeared": 11.408223390579224,
+      "run": 4
+    },
+    {
+      "scenario": "drift",
+      "sensorId": "engine-1.vibration",
+      "rule": "drift",
+      "opened": 7.900000095367432,
+      "appeared": 10.739922761917114,
+      "run": 5
+    },
+    {
+      "scenario": "drift",
+      "sensorId": "engine-1.vibration",
+      "rule": "drift",
+      "opened": 8.0,
+      "appeared": 11.324398279190063,
+      "run": 6
+    },
+    {
+      "scenario": "drift",
+      "sensorId": "engine-1.vibration",
+      "rule": "drift",
+      "opened": 8.0,
+      "appeared": 13.733671188354492,
+      "run": 7
+    },
+    {
+      "scenario": "drift",
+      "sensorId": "engine-1.vibration",
+      "rule": "drift",
+      "opened": 8.0,
+      "appeared": 11.296710729598999,
+      "run": 8
+    },
+    {
+      "scenario": "drift",
+      "sensorId": "engine-1.vibration",
+      "rule": "drift",
+      "opened": 8.0,
+      "appeared": 13.687893390655518,
+      "run": 9
+    },
+    {
+      "scenario": "drift",
+      "sensorId": "engine-1.vibration",
+      "rule": "drift",
+      "opened": 8.0,
+      "appeared": 11.386969327926636,
+      "run": 10
+    }
+  ],
+  "failures": [
+    {
+      "scenario": "dropout",
+      "run": 4,
+      "error": "dropout: alerts [('engine-1.tank_pressure', 'dropout'), ('engine-1.valve_position', 'rate_of_change')]"
+    }
+  ],
+  "summary": [
+    {
+      "scenario": "drift",
+      "sensorId": "engine-1.vibration",
+      "rule": "drift",
+      "runs": 10,
+      "openedMedian": 8.0,
+      "openedMax": 8.0,
+      "appearedMedian": 11.4,
+      "appearedMax": 13.7
+    },
+    {
+      "scenario": "dropout",
+      "sensorId": "engine-1.tank_pressure",
+      "rule": "dropout",
+      "runs": 9,
+      "openedMedian": 0.0,
+      "openedMax": 0.0,
+      "appearedMedian": 2.5,
+      "appearedMax": 2.8
+    },
+    {
+      "scenario": "spike",
+      "sensorId": "engine-1.chamber_temp",
+      "rule": "rate_of_change",
+      "runs": 10,
+      "openedMedian": 0.0,
+      "openedMax": 0.0,
+      "appearedMedian": -0.7,
+      "appearedMax": 0.1
+    },
+    {
+      "scenario": "spike",
+      "sensorId": "engine-1.chamber_temp",
+      "rule": "threshold",
+      "runs": 10,
+      "openedMedian": 0.0,
+      "openedMax": 0.0,
+      "appearedMedian": -0.7,
+      "appearedMax": 0.1
+    },
+    {
+      "scenario": "stuck",
+      "sensorId": "engine-1.fuel_flow",
+      "rule": "flatline",
+      "runs": 10,
+      "openedMedian": 0.0,
+      "openedMax": 0.0,
+      "appearedMedian": 5.4,
+      "appearedMax": 5.8
+    }
+  ]
+}

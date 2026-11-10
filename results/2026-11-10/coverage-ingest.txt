@@ -1,0 +1,9 @@
+$ cd ingest && ./gradlew test jacocoTestReport -q
+32 tests (AlertsControllerTest 6, BatchValidatorTest 13, ContractTest 1, HealthTest 1, ReadingsControllerTest 11), exit 0
+
+JaCoCo total (build/reports/jacoco/test/html/index.html):
+Instructions: 19 missed of 695, 97%
+Branches:     16 missed of 78, 79%
+Lines:        3 missed of 128
+Methods:      1 missed of 24
+Classes:      0 missed of 7

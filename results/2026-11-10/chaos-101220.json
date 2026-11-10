@@ -1,0 +1,704 @@
+{
+  "script": "sustained.js",
+  "env": {
+    "FLIGHT_ID": "20261110T101220Z-9523",
+    "RATE": "10",
+    "DURATION": "300s",
+    "SPIKE_AT": "20"
+  },
+  "k6": "grafana/k6:2.3.0",
+  "k6Exit": 0,
+  "start": 1794305542.0397496,
+  "loadEnd": 1794305843.0284896,
+  "timeline": [
+    {
+      "t": 1794305547.1997561,
+      "queue": 5,
+      "dlq": 0,
+      "desired": 1,
+      "ready": 1
+    },
+    {
+      "t": 1794305552.2440274,
+      "queue": 4,
+      "dlq": 0,
+      "desired": 1,
+      "ready": 1
+    },
+    {
+      "t": 1794305560.4336,
+      "queue": 58,
+      "dlq": 0,
+      "desired": 1,
+      "ready": 0
+    },
+    {
+      "t": 1794305568.7953637,
+      "queue": 147,
+      "dlq": 0,
+      "desired": 1,
+      "ready": 0
+    },
+    {
+      "t": 1794305573.661109,
+      "queue": 100,
+      "dlq": 0,
+      "desired": 1,
+      "ready": 0
+    },
+    {
+      "t": 1794305578.9915597,
+      "queue": 151,
+      "dlq": 0,
+      "desired": 1,
+      "ready": 0
+    },
+    {
+      "t": 1794305584.0912368,
+      "queue": 129,
+      "dlq": 0,
+      "desired": 2,
+      "ready": 0
+    },
+    {
+      "t": 1794305589.0683177,
+      "queue": 164,
+      "dlq": 0,
+      "desired": 2,
+      "ready": 1
+    },
+    {
+      "t": 1794305600.0447397,
+      "queue": 95,
+      "dlq": 0,
+      "desired": 2,
+      "ready": 1
+    },
+    {
+      "t": 1794305606.2472532,
+      "queue": 16,
+      "dlq": 0,
+      "desired": 2,
+      "ready": 1
+    },
+    {
+      "t": 1794305610.520416,
+      "queue": 1,
+      "dlq": 0,
+      "desired": 2,
+      "ready": 1
+    },
+    {
+      "t": 1794305621.2313502,
+      "queue": 1,
+      "dlq": 0,
+      "desired": 2,
+      "ready": 1
+    },
+    {
+      "t": 1794305626.0491674,
+      "queue": 6,
+      "dlq": 0,
+      "desired": 2,
+      "ready": 1
+    },
+    {
+      "t": 1794305630.6045463,
+      "queue": 1,
+      "dlq": 0,
+      "desired": 2,
+      "ready": 1
+    },
+    {
+      "t": 1794305635.6411195,
+      "queue": 6,
+      "dlq": 0,
+      "desired": 2,
+      "ready": 1
+    },
+    {
+      "t": 1794305640.4518552,
+      "queue": 1,
+      "dlq": 0,
+      "desired": 2,
+      "ready": 1
+    },
+    {
+      "t": 1794305650.6344972,
+      "queue": 0,
+      "dlq": 0,
+      "desired": 2,
+      "ready": 1
+    },
+    {
+      "t": 1794305655.1260898,
+      "queue": 2,
+      "dlq": 0,
+      "desired": 2,
+      "ready": 1
+    },
+    {
+      "t": 1794305659.9347963,
+      "queue": 10,
+      "dlq": 0,
+      "desired": 1,
+      "ready": 1
+    },
+    {
+      "t": 1794305664.9335291,
+      "queue": 9,
+      "dlq": 0,
+      "desired": 1,
+      "ready": 1
+    },
+    {
+      "t": 1794305673.1323617,
+      "queue": 58,
+      "dlq": 0,
+      "desired": 1,
+      "ready": 0
+    },
+    {
+      "t": 1794305681.3615897,
+      "queue": 100,
+      "dlq": 0,
+      "desired": 1,
+      "ready": 0
+    },
+    {
+      "t": 1794305686.3714578,
+      "queue": 95,
+      "dlq": 0,
+      "desired": 1,
+      "ready": 0
+    },
+    {
+      "t": 1794305691.6059132,
+      "queue": 143,
+      "dlq": 0,
+      "desired": 1,
+      "ready": 0
+    },
+    {
+      "t": 1794305696.6465635,
+      "queue": 137,
+      "dlq": 0,
+      "desired": 1,
+      "ready": 0
+    },
+    {
+      "t": 1794305702.1066852,
+      "queue": 186,
+      "dlq": 0,
+      "desired": 1,
+      "ready": 0
+    },
+    {
+      "t": 1794305712.2180061,
+      "queue": 69,
+      "dlq": 0,
+      "desired": 2,
+      "ready": 0
+    },
+    {
+      "t": 1794305722.323802,
+      "queue": 0,
+      "dlq": 0,
+      "desired": 2,
+      "ready": 1
+    },
+    {
+      "t": 1794305726.656091,
+      "queue": 0,
+      "dlq": 0,
+      "desired": 2,
+      "ready": 1
+    },
+    {
+      "t": 1794305731.343714,
+      "queue": 1,
+      "dlq": 0,
+      "desired": 2,
+      "ready": 0
+    },
+    {
+      "t": 1794305735.5645614,
+      "queue": 0,
+      "dlq": 0,
+      "desired": 2,
+      "ready": 1
+    },
+    {
+      "t": 1794305740.3006477,
+      "queue": 7,
+      "dlq": 0,
+      "desired": 2,
+      "ready": 0
+    },
+    {
+      "t": 1794305744.350347,
+      "queue": 0,
+      "dlq": 0,
+      "desired": 2,
+      "ready": 1
+    },
+    {
+      "t": 1794305749.2987852,
+      "queue": 9,
+      "dlq": 0,
+      "desired": 2,
+      "ready": 1
+    },
+    {
+      "t": 1794305754.017101,
+      "queue": 0,
+      "dlq": 0,
+      "desired": 2,
+      "ready": 1
+    },
+    {
+      "t": 1794305758.7352073,
+      "queue": 6,
+      "dlq": 0,
+      "desired": 2,
+      "ready": 1
+    },
+    {
+      "t": 1794305764.1345263,
+      "queue": 9,
+      "dlq": 0,
+      "desired": 1,
+      "ready": 1
+    },
+    {
+      "t": 1794305773.3543675,
+      "queue": 40,
+      "dlq": 0,
+      "desired": 1,
+      "ready": 1
+    },
+    {
+      "t": 1794305784.1676443,
+      "queue": 93,
+      "dlq": 0,
+      "desired": 1,
+      "ready": 0
+    },
+    {
+      "t": 1794305789.0071502,
+      "queue": 88,
+      "dlq": 0,
+      "desired": 1,
+      "ready": 0
+    },
+    {
+      "t": 1794305794.286157,
+      "queue": 133,
+      "dlq": 0,
+      "desired": 1,
+      "ready": 0
+    },
+    {
+      "t": 1794305804.5446002,
+      "queue": 184,
+      "dlq": 0,
+      "desired": 1,
+      "ready": 0
+    },
+    {
+      "t": 1794305814.554801,
+      "queue": 106,
+      "dlq": 0,
+      "desired": 2,
+      "ready": 0
+    },
+    {
+      "t": 1794305819.5680466,
+      "queue": 27,
+      "dlq": 0,
+      "desired": 2,
+      "ready": 0
+    },
+    {
+      "t": 1794305823.9690723,
+      "queue": 0,
+      "dlq": 0,
+      "desired": 2,
+      "ready": 1
+    },
+    {
+      "t": 1794305828.062906,
+      "queue": 0,
+      "dlq": 0,
+      "desired": 2,
+      "ready": 1
+    },
+    {
+      "t": 1794305832.7809067,
+      "queue": 6,
+      "dlq": 0,
+      "desired": 2,
+      "ready": 0
+    },
+    {
+      "t": 1794305837.3449469,
+      "queue": 0,
+      "dlq": 0,
+      "desired": 2,
+      "ready": 1
+    },
+    {
+      "t": 1794305842.3798487,
+      "queue": 9,
+      "dlq": 0,
+      "desired": 2,
+      "ready": 0
+    },
+    {
+      "t": 1794305846.1976385,
+      "queue": 1,
+      "dlq": 0,
+      "desired": 2,
+      "ready": 1
+    },
+    {
+      "t": 1794305849.793288,
+      "queue": 0,
+      "dlq": 0,
+      "desired": 2,
+      "ready": 1
+    },
+    {
+      "t": 1794305853.4569445,
+      "queue": 0,
+      "dlq": 0,
+      "desired": 2,
+      "ready": 2
+    },
+    {
+      "t": 1794305857.373591,
+      "queue": 0,
+      "dlq": 0,
+      "desired": 2,
+      "ready": 2
+    },
+    {
+      "t": 1794305861.085541,
+      "queue": 0,
+      "dlq": 0,
+      "desired": 2,
+      "ready": 2
+    },
+    {
+      "t": 1794305865.0782883,
+      "queue": 0,
+      "dlq": 0,
+      "desired": 2,
+      "ready": 2
+    },
+    {
+      "t": 1794305868.7804947,
+      "queue": 0,
+      "dlq": 0,
+      "desired": 1,
+      "ready": 1
+    }
+  ],
+  "visibilityTimeout": 5,
+  "kills": [
+    {
+      "t": 1794305552.3423338,
+      "pod": "pod/processor-7c76d5bc9d-jl6tn"
+    },
+    {
+      "t": 1794305562.575949,
+      "pod": "pod/processor-7c76d5bc9d-gvl5k"
+    },
+    {
+      "t": 1794305572.7814343,
+      "pod": "pod/processor-7c76d5bc9d-pw7md"
+    },
+    {
+      "t": 1794305582.9947443,
+      "pod": "pod/processor-7c76d5bc9d-7nr98"
+    },
+    {
+      "t": 1794305593.218125,
+      "pod": "pod/processor-7c76d5bc9d-4qrjx"
+    },
+    {
+      "t": 1794305603.4362512,
+      "pod": "pod/processor-7c76d5bc9d-bfnh8"
+    },
+    {
+      "t": 1794305613.6547184,
+      "pod": "pod/processor-7c76d5bc9d-vp9sl"
+    },
+    {
+      "t": 1794305623.8704987,
+      "pod": "pod/processor-7c76d5bc9d-btktd"
+    },
+    {
+      "t": 1794305634.0856373,
+      "pod": "pod/processor-7c76d5bc9d-dcjk5"
+    },
+    {
+      "t": 1794305644.2916899,
+      "pod": "pod/processor-7c76d5bc9d-g4ttf"
+    },
+    {
+      "t": 1794305654.5067656,
+      "pod": "pod/processor-7c76d5bc9d-42jvl"
+    },
+    {
+      "t": 1794305664.7295098,
+      "pod": "pod/processor-7c76d5bc9d-n7p7l"
+    },
+    {
+      "t": 1794305674.9550807,
+      "pod": "pod/processor-7c76d5bc9d-6qw5h"
+    },
+    {
+      "t": 1794305685.1563132,
+      "pod": "pod/processor-7c76d5bc9d-d98tq"
+    },
+    {
+      "t": 1794305695.3620477,
+      "pod": "pod/processor-7c76d5bc9d-m24vd"
+    },
+    {
+      "t": 1794305705.5717475,
+      "pod": "pod/processor-7c76d5bc9d-h5m94"
+    },
+    {
+      "t": 1794305715.7835011,
+      "pod": "pod/processor-7c76d5bc9d-9cfvd"
+    },
+    {
+      "t": 1794305725.9899287,
+      "pod": "pod/processor-7c76d5bc9d-hnvc4"
+    },
+    {
+      "t": 1794305736.2230563,
+      "pod": "pod/processor-7c76d5bc9d-67mkq"
+    },
+    {
+      "t": 1794305746.4555707,
+      "pod": "pod/processor-7c76d5bc9d-g9sqt"
+    },
+    {
+      "t": 1794305756.6760216,
+      "pod": "pod/processor-7c76d5bc9d-xkvvm"
+    },
+    {
+      "t": 1794305766.891281,
+      "pod": "pod/processor-7c76d5bc9d-4hj4j"
+    },
+    {
+      "t": 1794305777.0983267,
+      "pod": "pod/processor-7c76d5bc9d-hrld7"
+    },
+    {
+      "t": 1794305787.3141131,
+      "pod": "pod/processor-7c76d5bc9d-dkqf2"
+    },
+    {
+      "t": 1794305797.5101657,
+      "pod": "pod/processor-7c76d5bc9d-jshh2"
+    },
+    {
+      "t": 1794305807.7257273,
+      "pod": "pod/processor-7c76d5bc9d-vrk57"
+    },
+    {
+      "t": 1794305817.9457338,
+      "pod": "pod/processor-7c76d5bc9d-ph8q5"
+    },
+    {
+      "t": 1794305828.1634874,
+      "pod": "pod/processor-7c76d5bc9d-jxrrn"
+    },
+    {
+      "t": 1794305838.3911347,
+      "pod": "pod/processor-7c76d5bc9d-cctdf"
+    }
+  ],
+  "expected": {
+    "readings": 15000,
+    "alerts": [
+      [
+        "engine-1001.chamber_temp",
+        "rate_of_change"
+      ],
+      [
+        "engine-1001.chamber_temp",
+        "threshold"
+      ],
+      [
+        "engine-1002.chamber_temp",
+        "rate_of_change"
+      ],
+      [
+        "engine-1002.chamber_temp",
+        "threshold"
+      ],
+      [
+        "engine-1003.chamber_temp",
+        "rate_of_change"
+      ],
+      [
+        "engine-1003.chamber_temp",
+        "threshold"
+      ],
+      [
+        "engine-1004.chamber_temp",
+        "rate_of_change"
+      ],
+      [
+        "engine-1004.chamber_temp",
+        "threshold"
+      ],
+      [
+        "engine-1005.chamber_temp",
+        "rate_of_change"
+      ],
+      [
+        "engine-1005.chamber_temp",
+        "threshold"
+      ],
+      [
+        "engine-1006.chamber_temp",
+        "rate_of_change"
+      ],
+      [
+        "engine-1006.chamber_temp",
+        "threshold"
+      ],
+      [
+        "engine-1007.chamber_temp",
+        "rate_of_change"
+      ],
+      [
+        "engine-1007.chamber_temp",
+        "threshold"
+      ],
+      [
+        "engine-1008.chamber_temp",
+        "rate_of_change"
+      ],
+      [
+        "engine-1008.chamber_temp",
+        "threshold"
+      ],
+      [
+        "engine-1009.chamber_temp",
+        "rate_of_change"
+      ],
+      [
+        "engine-1009.chamber_temp",
+        "threshold"
+      ],
+      [
+        "engine-1010.chamber_temp",
+        "rate_of_change"
+      ],
+      [
+        "engine-1010.chamber_temp",
+        "threshold"
+      ]
+    ],
+    "unsure": 0
+  },
+  "stored": {
+    "readings": 15000,
+    "alerts": [
+      [
+        "engine-1001.chamber_temp",
+        "rate_of_change"
+      ],
+      [
+        "engine-1001.chamber_temp",
+        "threshold"
+      ],
+      [
+        "engine-1002.chamber_temp",
+        "rate_of_change"
+      ],
+      [
+        "engine-1002.chamber_temp",
+        "threshold"
+      ],
+      [
+        "engine-1003.chamber_temp",
+        "rate_of_change"
+      ],
+      [
+        "engine-1003.chamber_temp",
+        "threshold"
+      ],
+      [
+        "engine-1004.chamber_temp",
+        "rate_of_change"
+      ],
+      [
+        "engine-1004.chamber_temp",
+        "threshold"
+      ],
+      [
+        "engine-1005.chamber_temp",
+        "rate_of_change"
+      ],
+      [
+        "engine-1005.chamber_temp",
+        "threshold"
+      ],
+      [
+        "engine-1006.chamber_temp",
+        "rate_of_change"
+      ],
+      [
+        "engine-1006.chamber_temp",
+        "threshold"
+      ],
+      [
+        "engine-1007.chamber_temp",
+        "rate_of_change"
+      ],
+      [
+        "engine-1007.chamber_temp",
+        "threshold"
+      ],
+      [
+        "engine-1008.chamber_temp",
+        "rate_of_change"
+      ],
+      [
+        "engine-1008.chamber_temp",
+        "threshold"
+      ],
+      [
+        "engine-1009.chamber_temp",
+        "rate_of_change"
+      ],
+      [
+        "engine-1009.chamber_temp",
+        "threshold"
+      ],
+      [
+        "engine-1010.chamber_temp",
+        "rate_of_change"
+      ],
+      [
+        "engine-1010.chamber_temp",
+        "threshold"
+      ]
+    ]
+  },
+  "diff": {
+    "missingAlerts": [],
+    "extraAlerts": [],
+    "readingsDelta": 0
+  },
+  "dlqAdded": 0,
+  "passed": true
+}
