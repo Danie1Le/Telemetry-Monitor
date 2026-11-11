@@ -21,7 +21,7 @@ services:
     environment:
       DYNAMODB_ENDPOINT: http://dynamodb:8000
       SNS_ENDPOINT: http://moto:5000
-      AWS_DEFAULT_REGION: us-west-2
+      AWS_DEFAULT_REGION: us-east-2
       AWS_ACCESS_KEY_ID: local
       AWS_SECRET_ACCESS_KEY: local
     depends_on: [dynamodb, moto]

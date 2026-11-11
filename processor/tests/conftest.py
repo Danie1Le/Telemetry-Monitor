@@ -20,7 +20,7 @@ def _endpoint(container: DockerContainer, port: int) -> str:
 @pytest.fixture(scope="session")
 def aws_env():
     env = pytest.MonkeyPatch()
-    env.setenv("AWS_DEFAULT_REGION", "us-west-2")
+    env.setenv("AWS_DEFAULT_REGION", "us-east-2")
     env.setenv("AWS_ACCESS_KEY_ID", "local")
     env.setenv("AWS_SECRET_ACCESS_KEY", "local")
     yield env

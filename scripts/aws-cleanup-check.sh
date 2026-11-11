@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Run after `terraform destroy`. Exits non-zero, listing what is left, if any resource tagged
-# Project=telemetry-monitor remains in us-west-2 (the kept bootstrap budgets aside), or the demo IAM user
+# Project=telemetry-monitor remains in us-east-2 (the kept bootstrap budgets aside), or the demo IAM user
 # or any of its access keys exists.
 # Usage: scripts/aws-cleanup-check.sh
 set -euo pipefail
@@ -19,7 +19,7 @@ left=0
 account=$(aws sts get-caller-identity --query Account --output text)
 
 # The bootstrap budgets carry the same tag and are kept on purpose until the account is closed.
-arns=$(aws resourcegroupstaggingapi get-resources --region us-west-2 \
+arns=$(aws resourcegroupstaggingapi get-resources --region us-east-2 \
   --tag-filters Key=Project,Values=telemetry-monitor \
   --query 'ResourceTagMappingList[].ResourceARN' --output text)
 arns=$(printf '%s' "$arns" | tr '\t' '\n' | grep -v ':budgets::' || true)
@@ -36,5 +36,5 @@ elif [[ $err != *NoSuchEntity* ]]; then
   exit 1
 fi
 
-if [ "$left" = 0 ]; then echo "clean: account $account has nothing tagged Project=telemetry-monitor in us-west-2 (budgets aside), no demo user or access keys"; fi
+if [ "$left" = 0 ]; then echo "clean: account $account has nothing tagged Project=telemetry-monitor in us-east-2 (budgets aside), no demo user or access keys"; fi
 exit "$left"
