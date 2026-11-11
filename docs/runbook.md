@@ -6,8 +6,18 @@ Scripts handle steps 6, 7, 11 and 13. The other steps stay manual. Every resourc
 
 ## Before (manual, once)
 
-1. [ ] Create a **new AWS account** on the Free plan. Never upgrade it.
-2. [ ] Turn on MFA for the root login. Create the admin IAM user with MFA, then lock the root login away.
+1. [ ] Sign up with **Sign up for AWS (new)** (for example, sign in with Google) and create your first project ([sign-up steps](https://docs.aws.amazon.com/accounts/latest/reference/sign-in-new.html)). The project holds one AWS account, which starts in the Free Tier. Never upgrade it: AWS says you cannot reverse the upgrade ([upgrade](https://docs.aws.amazon.com/accounts/latest/reference/upgrade-account.html)). You do not create a root user, because your AWS Builder ID owns the project account ([compare sign-up options](https://docs.aws.amazon.com/accounts/latest/reference/sign-up-for-aws.html#compare-access-management)). Check that the project's Region is us-east-2: in AWS Settings, choose **Project**, then **Overview**, **Additional Info**. AWS assigns the Region from the country in your contact address, and you cannot modify it ([project Regions](https://docs.aws.amazon.com/accounts/latest/reference/project-regions.html)). Every Region in this repo is us-east-2.
+
+   The docs say a project account allows IAM users for programmatic access and supports AWS Budgets ([supported services](https://docs.aws.amazon.com/accounts/latest/reference/supported-services-sign-up-new.html)), but this runbook has not been tried on one. If step 3, 4 or 6 fails with AccessDenied, stop, run the destroy steps for anything already created (11 to 13, and `terraform -chdir=terraform/bootstrap destroy`), and switch to a classic account.
+2. [ ] Log the AWS CLI in to the project, then export the session credentials into the shell, because Terraform and other external tools may not read the `aws login` credentials:
+   ```bash
+   aws login --profile telemetry
+   eval "$(aws configure export-credentials --profile telemetry --format env)"
+   aws sts get-caller-identity   # shows the project's account ID
+   ```
+   Run every later step in this shell. The exported credentials do not refresh and expire before the login does, so re-run only the `eval` line before steps 3, 4, 6, 12 and 13, before the throttle-check loop in step 9, and after any ExpiredToken error. Run `aws login` again only when the login itself has expired: AWS says access is valid for 12 hours ([CLI credentials](https://docs.aws.amazon.com/accounts/latest/reference/connect-ai-coding-tool.html)).
+
+   If AWS shows only the classic sign-up, a classic account also works: create an admin IAM user and run `aws configure` with its access key. Set the region to us-east-2 there, because the region is hardcoded across Terraform, k8s, ingest and the scripts.
 3. [ ] Create the $0.01 and $1 budgets: `cp terraform/bootstrap/terraform.tfvars.example terraform/bootstrap/terraform.tfvars`, set `alert_email` in it, then `terraform -chdir=terraform/bootstrap init` and `terraform -chdir=terraform/bootstrap apply`.
 
 ## One sitting (a few hours, never left running)
@@ -38,19 +48,19 @@ Scripts handle steps 6, 7, 11 and 13. The other steps stay manual. Every resourc
    uv run --project simulator scripts/measure.py detection --runs 3
    end=$(date -u +%FT%TZ)
    for t in readings alerts; do for m in WriteThrottleEvents ReadThrottleEvents; do
-     echo "$t $m: $(aws cloudwatch get-metric-statistics --region us-west-2 --namespace AWS/DynamoDB --metric-name $m --dimensions Name=TableName,Value=$t --start-time $start --end-time $end --period 60 --statistics Sum --query 'sum(Datapoints[].Sum)' --output text)"
+     echo "$t $m: $(aws cloudwatch get-metric-statistics --region us-east-2 --namespace AWS/DynamoDB --metric-name $m --dimensions Name=TableName,Value=$t --start-time $start --end-time $end --period 60 --statistics Sum --query 'sum(Datapoints[].Sum)' --output text)"
    done; done   # all four must be 0
    ```
    The run writes `results/<UTC date>/`. `measure.py` does not check throttling, so the loop above is the check. CloudWatch lags a few minutes: re-run the loop with a later `end` before trusting a 0. At 3 Batches/s the queue stays far below the KEDA target of 100 messages per replica, so expect one processor replica and no scale-up (`kubectl --context kind-telemetry -n telemetry get hpa -w`). Label the AWS numbers as AWS and the capped rate.
 10. [ ] Optionally, take console screenshots of the queue, the tables, the alarm, and the billing page at $0.
 11. [ ] Run `scripts/aws-down.sh` (`kubectl delete -k k8s/overlays/aws`), then `scripts/aws-key.sh --delete` to delete the Secret and the IAM access key.
 12. [ ] Run `terraform/main` destroy. Optional: save the output.
-13. [ ] Run `scripts/aws-cleanup-check.sh`. It prints the account it checked and fails if any resource with the project tag is left in us-west-2 (the bootstrap budgets aside, kept until step 15), or if the demo IAM user or any of its access keys is left. It checks only the demo user's keys, because the check itself runs with the admin key. The admin user's keys are yours to manage. Then confirm the billing page shows $0.
+13. [ ] Run `scripts/aws-cleanup-check.sh`. It prints the account it checked and fails if any resource with the project tag is left in us-east-2 (the bootstrap budgets aside, kept until step 15), or if the demo IAM user or any of its access keys is left. It checks only the demo user's keys, because the check itself runs with your login session (or, on a classic account, the admin key, which is yours to manage). Then confirm the billing page shows $0.
 
 ## After
 
 14. [ ] Once the cleanup check passes, the local `terraform/main` state file and the backup from step 4a can be deleted.
-15. [ ] After the demo and the AWS numbers are captured, **close the account by hand**. The bootstrap budgets go with it.
+15. [ ] After the demo and the AWS numbers are captured, **close the project by hand**: in AWS Settings, open the project and choose **Close project**. On a classic account, close the account instead. The bootstrap budgets go with it.
 
 ## Notes
 

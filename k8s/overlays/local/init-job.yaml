@@ -19,7 +19,7 @@ spec:
           env:
             - { name: DYNAMODB_ENDPOINT, value: http://dynamodb:8000 }
             - { name: SNS_ENDPOINT, value: http://moto:5000 }
-            - { name: AWS_DEFAULT_REGION, value: us-west-2 }
+            - { name: AWS_DEFAULT_REGION, value: us-east-2 }
           envFrom:
             - secretRef: { name: aws-credentials }
           resources:

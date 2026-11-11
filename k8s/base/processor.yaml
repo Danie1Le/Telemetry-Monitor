@@ -21,7 +21,7 @@ spec:
             - { name: READINGS_TABLE, value: readings }
             - { name: ALERTS_TABLE, value: alerts }
             - { name: VALKEY_URL, value: "redis://valkey:6379/0" }
-            - { name: AWS_DEFAULT_REGION, value: us-west-2 }
+            - { name: AWS_DEFAULT_REGION, value: us-east-2 }
           # Overlays supply processor-env (queue URLs, endpoints) and aws-credentials.
           envFrom:
             - configMapRef: { name: processor-env }
@@ -62,7 +62,7 @@ spec:
       authenticationRef: { name: aws-credentials }
       metadata:
         queueURLFromEnv: QUEUE_URL
-        awsRegion: us-west-2
+        awsRegion: us-east-2
         # Target messages per replica.
         queueLength: "100"
         # Queue length = ApproximateNumberOfMessages + ApproximateNumberOfMessagesNotVisible.
