@@ -6,16 +6,18 @@ Scripts handle steps 6, 7, 11 and 13. The other steps stay manual. Every resourc
 
 ## Before (manual, once)
 
-1. [ ] Sign up with **Sign up for AWS (new)** (for example, sign in with Google) and create your first project. The project is an AWS account on the Free plan. Never upgrade it: the upgrade to the Paid plan cannot be undone. There is no root user and no admin IAM user to create, because your AWS Builder ID owns the account. Check that the project's Region is us-east-2: in AWS Settings, open the project and look under **Overview**, **Additional Info**. AWS picks the Region from the country in your contact address and you cannot change it. Every Region in this repo is us-east-2.
+1. [ ] Sign up with **Sign up for AWS (new)** (for example, sign in with Google) and create your first project ([sign-up steps](https://docs.aws.amazon.com/accounts/latest/reference/sign-in-new.html)). The project holds one AWS account, which starts in the Free Tier. Never upgrade it: AWS says you cannot reverse the upgrade ([upgrade](https://docs.aws.amazon.com/accounts/latest/reference/upgrade-account.html)). You do not create a root user, because your AWS Builder ID owns the project account ([compare sign-up options](https://docs.aws.amazon.com/accounts/latest/reference/sign-up-for-aws.html#compare-access-management)). Check that the project's Region is us-east-2: in AWS Settings, choose **Project**, then **Overview**, **Additional Info**. AWS assigns the Region from the country in your contact address, and you cannot modify it ([project Regions](https://docs.aws.amazon.com/accounts/latest/reference/project-regions.html)). Every Region in this repo is us-east-2.
+
+   The docs say a project account allows IAM users for programmatic access and supports AWS Budgets ([supported services](https://docs.aws.amazon.com/accounts/latest/reference/supported-services-sign-up-new.html)), but this runbook has not been tried on one. If step 3, 4 or 6 fails with AccessDenied, stop, run the destroy steps for anything already created (11 to 13, and `terraform -chdir=terraform/bootstrap destroy`), and switch to a classic account.
 2. [ ] Log the AWS CLI in to the project, then export the session credentials into the shell, because Terraform and other external tools may not read the `aws login` credentials:
    ```bash
    aws login --profile telemetry
    eval "$(aws configure export-credentials --profile telemetry --format env)"
    aws sts get-caller-identity   # shows the project's account ID
    ```
-   Run every later step in this shell. The login lasts 12 hours. If a command fails with an expired-token error mid-sitting, run both commands again.
+   Run every later step in this shell. The exported credentials do not refresh and expire before the login does, so re-run only the `eval` line before steps 3, 4, 6, 12 and 13, before the throttle-check loop in step 9, and after any ExpiredToken error. Run `aws login` again only when the login itself has expired: AWS says access is valid for 12 hours ([CLI credentials](https://docs.aws.amazon.com/accounts/latest/reference/connect-ai-coding-tool.html)).
 
-   If AWS shows only the classic sign-up, a classic account also works: create an admin IAM user, run `aws configure` with its access key, and set the region to us-east-2 (or change the region in the Terraform providers).
+   If AWS shows only the classic sign-up, a classic account also works: create an admin IAM user and run `aws configure` with its access key. Set the region to us-east-2 there, because the region is hardcoded across Terraform, k8s, ingest and the scripts.
 3. [ ] Create the $0.01 and $1 budgets: `cp terraform/bootstrap/terraform.tfvars.example terraform/bootstrap/terraform.tfvars`, set `alert_email` in it, then `terraform -chdir=terraform/bootstrap init` and `terraform -chdir=terraform/bootstrap apply`.
 
 ## One sitting (a few hours, never left running)
