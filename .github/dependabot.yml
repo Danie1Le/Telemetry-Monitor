@@ -15,16 +15,23 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 3
+  # shortcut: PyYAML has no Python 3.15 Windows wheel yet, so local runs need 3.14; drop the ignore once it ships.
   - package-ecosystem: docker
     directory: /simulator
     schedule:
       interval: weekly
     open-pull-requests-limit: 3
+    ignore:
+      - dependency-name: python
+        versions: [">=3.15"]
   - package-ecosystem: docker
     directory: /processor
     schedule:
       interval: weekly
     open-pull-requests-limit: 3
+    ignore:
+      - dependency-name: python
+        versions: [">=3.15"]
   - package-ecosystem: docker
     directory: /ingest
     schedule:
