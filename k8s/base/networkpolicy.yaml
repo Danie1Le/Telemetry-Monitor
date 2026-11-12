@@ -1,4 +1,5 @@
-# Ingress limits for the two pods that take unauthenticated writes. No namespace default-deny:
+# Ingress limits for the two in-cluster-only services with no auth of their own. Ingest stays
+# open: it is the Gateway's entry point. No namespace default-deny:
 # every other pod stays open. Kubelet probes still pass: NetworkPolicy always allows traffic
 # from the pod's node, and kindnet's kube-network-policies accepts all traffic from root on the
 # node. Exec probes and `kubectl port-forward` connect to localhost inside the pod, which no
