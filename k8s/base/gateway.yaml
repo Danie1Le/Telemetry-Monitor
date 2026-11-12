@@ -51,5 +51,10 @@ spec:
   parentRefs:
     - name: telemetry
   rules:
-    - backendRefs:
+    # Only the client-facing API; other ingest paths (e.g. /actuator/*) stay cluster-internal.
+    - matches:
+        - path: { type: Exact, value: /readings }
+        - path: { type: Exact, value: /alerts }
+        - path: { type: Exact, value: /actuator/health }
+      backendRefs:
         - { name: ingest, port: 8080 }
