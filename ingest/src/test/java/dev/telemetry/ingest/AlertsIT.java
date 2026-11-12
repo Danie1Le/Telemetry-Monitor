@@ -118,7 +118,7 @@ class AlertsIT {
         HttpClient.newHttpClient()
             .send(
                 HttpRequest.newBuilder(URI.create("http://localhost:" + port + "/alerts?" + query))
-                    .header(ApiKeyInterceptor.HEADER, ApiKeyTest.KEY)
+                    .header(ApiKeyInterceptor.HEADER, TestApiKey.KEY)
                     .build(),
                 HttpResponse.BodyHandlers.ofString());
     assertEquals(200, response.statusCode());

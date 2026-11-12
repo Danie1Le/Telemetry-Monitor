@@ -41,7 +41,7 @@ class AlertsControllerTest {
 
   // With the key: ApiKeyTest covers requests without it.
   static MockHttpServletRequestBuilder alerts() {
-    return get("/alerts").header(ApiKeyInterceptor.HEADER, ApiKeyTest.KEY);
+    return get("/alerts").header(ApiKeyInterceptor.HEADER, TestApiKey.KEY);
   }
 
   QueryRequest queried() {

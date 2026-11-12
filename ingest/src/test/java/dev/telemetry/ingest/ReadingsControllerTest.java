@@ -47,7 +47,7 @@ class ReadingsControllerTest {
 
   // With the key: ApiKeyTest covers requests without it.
   static MockHttpServletRequestBuilder readings() {
-    return post("/readings").header(ApiKeyInterceptor.HEADER, ApiKeyTest.KEY);
+    return post("/readings").header(ApiKeyInterceptor.HEADER, TestApiKey.KEY);
   }
 
   ResultActions send(String json) throws Exception {

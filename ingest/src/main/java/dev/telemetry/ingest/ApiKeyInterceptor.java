@@ -13,9 +13,14 @@ import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 /**
- * Every request but the health probes must carry the shared key in X-Api-Key. It covers all paths,
- * so a new endpoint is protected without being listed here, and an interceptor matches paths the
- * same way the controllers do.
+ * Every request outside Actuator must carry the shared key in X-Api-Key. It covers all paths, so a
+ * new endpoint is protected without being listed here, and an interceptor matches paths the same
+ * way the controllers do.
+ *
+ * <p>Actuator's own handler mapping never runs this interceptor: every exposed Actuator endpoint is
+ * public. application.properties therefore exposes only health (with its liveness and readiness
+ * groups, for the kubelet probes) and turns off the /actuator discovery page. An unexposed Actuator
+ * path falls through to the intercepted mappings and gets a 401.
  */
 @Component
 class ApiKeyInterceptor implements HandlerInterceptor, WebMvcConfigurer {
@@ -34,7 +39,7 @@ class ApiKeyInterceptor implements HandlerInterceptor, WebMvcConfigurer {
 
   @Override
   public void addInterceptors(InterceptorRegistry registry) {
-    registry.addInterceptor(this).excludePathPatterns("/actuator/health/**");
+    registry.addInterceptor(this);
   }
 
   @Override
