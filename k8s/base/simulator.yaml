@@ -17,6 +17,9 @@ spec:
           securityContext: { allowPrivilegeEscalation: false, capabilities: { drop: [ALL] } }
           env:
             - { name: INGEST_URL, value: http://ingest:8080/readings }
+            # Created by scripts/ingest-key.sh.
+            - name: INGEST_API_KEY
+              valueFrom: { secretKeyRef: { name: ingest-api-key, key: key } }
           ports:
             - { name: control, containerPort: 8081 }
           livenessProbe:

@@ -64,6 +64,7 @@ class SqsPublishIT {
             .send(
                 HttpRequest.newBuilder(URI.create("http://localhost:" + port + "/readings"))
                     .header("Content-Type", "application/json")
+                    .header(ApiKeyInterceptor.HEADER, ApiKeyTest.KEY)
                     .POST(HttpRequest.BodyPublishers.ofString(body))
                     .build(),
                 HttpResponse.BodyHandlers.ofString());

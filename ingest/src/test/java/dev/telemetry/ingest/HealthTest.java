@@ -16,8 +16,9 @@ class HealthTest {
 
   @Autowired MockMvc mvc;
 
+  // No X-Api-Key: the probes and the scripts' readiness check send none.
   @Test
-  void healthIsUp() throws Exception {
+  void healthIsUpWithoutApiKey() throws Exception {
     mvc.perform(get("/actuator/health"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.status").value("UP"));

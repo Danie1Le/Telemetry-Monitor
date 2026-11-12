@@ -31,6 +31,8 @@ configmap() { k -n telemetry create configmap "$1" --from-file="$2" --dry-run=cl
 configmap sensors sensors.yaml
 configmap elasticmq-conf local/elasticmq.conf
 configmap init-script local/init.sh
+# Generated, never committed: the key ingest's clients send.
+scripts/ingest-key.sh
 
 # init.sh is idempotent. A finished Job would not rerun, and its pod template is immutable.
 k -n telemetry delete job init --ignore-not-found

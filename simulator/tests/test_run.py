@@ -1,3 +1,4 @@
+import io
 import logging
 import random
 from itertools import pairwise
@@ -131,9 +132,25 @@ def test_none_scenario_changes_nothing(cfg):
     )
 
 
+def test_post_sends_the_api_key(monkeypatch):
+    sent = []
+    monkeypatch.setattr(
+        sim.urllib.request, "urlopen", lambda r, timeout: sent.append(r) or io.BytesIO()
+    )
+    sim.post("http://ingest/readings", "k", {"second": START})
+    assert sent[0].get_header("X-api-key") == "k"
+
+
+def test_startup_fails_without_api_key(monkeypatch):
+    monkeypatch.delenv("INGEST_API_KEY", raising=False)
+    with pytest.raises(KeyError, match="INGEST_API_KEY"):
+        sim.main()
+
+
 def test_main_runs_the_scenario_from_env(monkeypatch):
     seen = {}
     monkeypatch.setenv("SCENARIO", str(SCENARIOS / "spike.yaml"))
+    monkeypatch.setenv("INGEST_API_KEY", "k")
     monkeypatch.setenv("CONTROL_PORT", "0")
     monkeypatch.setattr(sim, "run", lambda *a, faults, **kw: seen.update(faults=faults))
     sim.main()

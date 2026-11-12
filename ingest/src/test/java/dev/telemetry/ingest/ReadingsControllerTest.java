@@ -24,6 +24,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest;
@@ -44,8 +45,13 @@ class ReadingsControllerTest {
   @Autowired MockMvc mvc;
   @MockitoBean SqsClient sqs;
 
+  // With the key: ApiKeyTest covers requests without it.
+  static MockHttpServletRequestBuilder readings() {
+    return post("/readings").header(ApiKeyInterceptor.HEADER, ApiKeyTest.KEY);
+  }
+
   ResultActions send(String json) throws Exception {
-    return mvc.perform(post("/readings").contentType(MediaType.APPLICATION_JSON).content(json));
+    return mvc.perform(readings().contentType(MediaType.APPLICATION_JSON).content(json));
   }
 
   static String batch(String version, String extra, String readings) {
@@ -121,7 +127,7 @@ class ReadingsControllerTest {
   @Test
   void yamlBatchIs415() throws Exception {
     mvc.perform(
-            post("/readings")
+            readings()
                 .contentType(MediaType.APPLICATION_YAML)
                 .content("schemaVersion: \"1\"\nreadings: []\n"))
         .andExpect(status().isUnsupportedMediaType());

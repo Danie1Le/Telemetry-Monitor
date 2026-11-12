@@ -50,7 +50,12 @@ uv run --project simulator scripts/measure.py <command>   # scale, sustained, de
 scripts/kind-down.sh
 ```
 
-`curl "http://localhost:8080/alerts?flightId=<id>"` reads a Flight's Alerts. Flight ids are in `kubectl --context kind-telemetry -n telemetry logs deploy/simulator`.
+`GET /alerts` reads a Flight's Alerts. It and `POST /readings` need the `X-Api-Key` header, whose value `scripts/kind-up.sh` generates into the Secret `ingest-api-key`; only `/actuator/health` is open. Flight ids are in `kubectl --context kind-telemetry -n telemetry logs deploy/simulator`.
+
+```bash
+key=$(kubectl --context kind-telemetry -n telemetry get secret ingest-api-key -o jsonpath='{.data.key}' | base64 -d)
+curl -H "X-Api-Key: $key" "http://localhost:8080/alerts?flightId=<id>"
+```
 
 ## Run one service on the host
 
@@ -58,6 +63,7 @@ scripts/kind-down.sh
 
 ```bash
 docker compose up -d
+export INGEST_API_KEY=dev-key                  # any non-blank value: ingest will not start without one
 (cd ingest && ./gradlew bootRun)               # :8080
 uv run --project simulator python -m simulator # posts to http://localhost:8080/readings
 ```
