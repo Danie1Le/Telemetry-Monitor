@@ -29,6 +29,8 @@ k -n telemetry get secret aws-credentials >/dev/null || { echo "Secret aws-crede
 k -n telemetry delete -f k8s/overlays/local/emulators.yaml -f k8s/overlays/local/init-job.yaml --ignore-not-found
 # Created outside Kustomize, as in scripts/kind-up.sh (the file lives outside k8s/).
 k -n telemetry create configmap sensors --from-file=sensors.yaml --dry-run=client -o yaml | k apply -f -
+# scripts/aws-down.sh deletes the Namespace, and the Secret with it.
+scripts/ingest-key.sh
 k apply -k k8s/overlays/aws
 # subPath ConfigMap mounts do not reach running pods on their own.
 k -n telemetry rollout restart deployment/ingest deployment/processor

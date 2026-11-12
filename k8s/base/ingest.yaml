@@ -15,6 +15,10 @@ spec:
           image: telemetry/ingest:local
           imagePullPolicy: IfNotPresent
           securityContext: { allowPrivilegeEscalation: false, capabilities: { drop: [ALL] } }
+          # Created by scripts/ingest-key.sh; ingest refuses to start without it.
+          env:
+            - name: INGEST_API_KEY
+              valueFrom: { secretKeyRef: { name: ingest-api-key, key: key } }
           # Overlays supply ingest-env (queue URL, endpoints) and aws-credentials.
           envFrom:
             - configMapRef: { name: ingest-env }

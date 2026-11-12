@@ -2,8 +2,9 @@
 // of every sensor in sensors.yaml at rateHz, in the ascent phase, with fresh timestamps.
 // Run through scripts/measure.py, which passes BASE_URL, SENSORS (sensors.yaml as JSON),
 // RATE (batches/s, also the engine count, so each engine posts about once per second),
-// FLIGHT_ID and, for a chaos run, SPIKE_AT: seconds after the start at which every engine's
-// chamber temperature spikes for SPIKE_SECONDS (no spike when unset).
+// FLIGHT_ID, INGEST_API_KEY (sent as X-Api-Key) and, for a chaos run, SPIKE_AT: seconds after
+// the start at which every engine's chamber temperature spikes for SPIKE_SECONDS (no spike when
+// unset).
 import http from 'k6/http';
 import { check } from 'k6';
 import exec from 'k6/execution';
@@ -53,7 +54,7 @@ export function postBatch(data) {
   const meta = exec.vu.metrics.metadata;
   Object.assign(meta, { engineId, second: String(second), spike: String(spike) });
   const res = http.post(`${__ENV.BASE_URL}/readings`, JSON.stringify(batch), {
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'X-Api-Key': __ENV.INGEST_API_KEY },
   });
   check(res, {
     'batch accepted': (r) => r.status === 202 && r.json('rejected') === 0,

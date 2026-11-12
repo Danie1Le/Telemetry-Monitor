@@ -9,13 +9,16 @@ machine's clock: on Docker Desktop that can run a second or two behind the clust
 Run from the repo root: uv run --project simulator scripts/e2e.py [scenario ...]
 """
 
+import base64
 import json
 import re
 import subprocess
 import sys
 import time
+import urllib.error
 import urllib.request
 from datetime import UTC, datetime
+from functools import cache
 from pathlib import Path
 
 from simulator.contracts import load_sensors
@@ -51,6 +54,13 @@ def kubectl(*args: str) -> str:
     ).stdout
 
 
+@cache
+def api_key() -> str:
+    """Ingest's X-Api-Key, from the Secret that scripts/ingest-key.sh creates."""
+    key = kubectl("get", "secret/ingest-api-key", "-o", "jsonpath={.data.key}")
+    return base64.b64decode(key).decode()
+
+
 def start_flight(scenario: str) -> str:
     """Restarts the simulator on a scenario and returns the id of the flight it starts."""
     # restartedAt forces a new pod even when SCENARIO is unchanged (a repeated scenario).
@@ -79,7 +89,10 @@ def start_flight(scenario: str) -> str:
 
 
 def alerts(flight_id: str) -> list[dict]:
-    with urllib.request.urlopen(ALERTS_URL + flight_id, timeout=5) as response:
+    request = urllib.request.Request(
+        ALERTS_URL + flight_id, headers={"X-Api-Key": api_key()}
+    )
+    with urllib.request.urlopen(request, timeout=5) as response:
         return json.load(response)
 
 
@@ -107,6 +120,12 @@ def run_scenario(scenario: str) -> list[tuple]:
         try:
             for a in alerts(flight_id):
                 appeared.setdefault((a["sensorId"], a["rule"], a["openedAt"]), now)
+        except urllib.error.HTTPError as e:
+            # A wrong key is a setup error, not a missed poll: without this, the
+            # scenarios that expect no Alerts would pass.
+            if e.code in (401, 403):
+                raise
+            print(f"  GET /alerts failed: {e}", flush=True)
         except OSError as e:  # a missed poll only delays `appeared`
             print(f"  GET /alerts failed: {e}", flush=True)
         time.sleep(1)

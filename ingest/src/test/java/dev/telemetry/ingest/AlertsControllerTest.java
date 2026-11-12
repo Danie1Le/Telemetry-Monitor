@@ -17,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -38,6 +39,11 @@ class AlertsControllerTest {
     when(dynamo.query(any(QueryRequest.class))).thenReturn(QueryResponse.builder().build());
   }
 
+  // With the key: ApiKeyTest covers requests without it.
+  static MockHttpServletRequestBuilder alerts() {
+    return get("/alerts").header(ApiKeyInterceptor.HEADER, TestApiKey.KEY);
+  }
+
   QueryRequest queried() {
     var captor = ArgumentCaptor.forClass(QueryRequest.class);
     verify(dynamo).query(captor.capture());
@@ -46,15 +52,15 @@ class AlertsControllerTest {
 
   @Test
   void missingFlightIdIs400() throws Exception {
-    mvc.perform(get("/alerts")).andExpect(status().isBadRequest());
-    mvc.perform(get("/alerts").param("flightId", " ")).andExpect(status().isBadRequest());
+    mvc.perform(alerts()).andExpect(status().isBadRequest());
+    mvc.perform(alerts().param("flightId", " ")).andExpect(status().isBadRequest());
     verifyNoInteractions(dynamo);
   }
 
   @Test
   void badSinceIs400() throws Exception {
     for (var since : new String[] {"abc", "-1", "10000000000000"}) {
-      mvc.perform(get("/alerts").param("flightId", "f1").param("since", since))
+      mvc.perform(alerts().param("flightId", "f1").param("since", since))
           .andExpect(status().isBadRequest());
     }
     verifyNoInteractions(dynamo);
@@ -62,7 +68,7 @@ class AlertsControllerTest {
 
   @Test
   void queriesByFlightOnly() throws Exception {
-    mvc.perform(get("/alerts").param("flightId", "f1"))
+    mvc.perform(alerts().param("flightId", "f1"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$").isEmpty());
     var request = queried();
@@ -74,7 +80,7 @@ class AlertsControllerTest {
 
   @Test
   void sincePadsToThirteenDigits() throws Exception {
-    mvc.perform(get("/alerts").param("flightId", "f1").param("since", "12345"))
+    mvc.perform(alerts().param("flightId", "f1").param("since", "12345"))
         .andExpect(status().isOk());
     var request = queried();
     assertEquals("flightId = :f AND alertKey >= :since", request.keyConditionExpression());
@@ -89,7 +95,7 @@ class AlertsControllerTest {
         .thenReturn(
             QueryResponse.builder().items(first).lastEvaluatedKey(first).build(),
             QueryResponse.builder().items(second).build());
-    mvc.perform(get("/alerts").param("flightId", "f1"))
+    mvc.perform(alerts().param("flightId", "f1"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.length()").value(2))
         .andExpect(jsonPath("$[0].alertKey").value("0000000000001"))
@@ -99,6 +105,6 @@ class AlertsControllerTest {
   @Test
   void dynamoFailureIs503() throws Exception {
     when(dynamo.query(any(QueryRequest.class))).thenThrow(SdkClientException.create("down"));
-    mvc.perform(get("/alerts").param("flightId", "f1")).andExpect(status().isServiceUnavailable());
+    mvc.perform(alerts().param("flightId", "f1")).andExpect(status().isServiceUnavailable());
   }
 }

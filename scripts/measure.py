@@ -46,7 +46,7 @@ from collections import Counter
 from datetime import UTC, datetime
 from pathlib import Path
 
-from e2e import EXPECTED, kubectl, print_table, run_scenario
+from e2e import EXPECTED, api_key, kubectl, print_table, run_scenario
 
 from simulator.contracts import load_sensors
 from simulator.flight import start_flight
@@ -180,6 +180,10 @@ def load(script: str, name: str, env: dict, raw=False, during=lambda k6: None):
         f"BASE_URL={GATEWAY}",
         "-e",
         f"SENSORS={json.dumps(load_sensors())}",
+        # Name only: docker copies the value from its own env, so the key stays off the
+        # command line and out of the run's record.
+        "-e",
+        "INGEST_API_KEY",
         *(arg for k, v in env.items() for arg in ("-e", f"{k}={v}")),
         K6,
         "run",
@@ -203,7 +207,12 @@ def load(script: str, name: str, env: dict, raw=False, during=lambda k6: None):
     print(f"{name}: k6 {script} {env}", flush=True)
     try:
         with open(f"{prefix}-k6.txt", "w") as log:
-            k6 = subprocess.Popen(cmd, stdout=log, stderr=subprocess.STDOUT)
+            k6 = subprocess.Popen(
+                cmd,
+                stdout=log,
+                stderr=subprocess.STDOUT,
+                env=os.environ | {"INGEST_API_KEY": api_key()},
+            )
             during(k6)
             k6.wait()
         end = time.time()

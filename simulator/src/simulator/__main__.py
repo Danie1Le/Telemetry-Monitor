@@ -18,10 +18,9 @@ from simulator.flight import check_config, flight_seconds, make_batch, start_fli
 log = logging.getLogger("simulator")
 
 
-def post(url: str, batch: dict) -> None:
-    request = urllib.request.Request(
-        url, json.dumps(batch).encode(), {"Content-Type": "application/json"}
-    )
+def post(url: str, key: str, batch: dict) -> None:
+    headers = {"Content-Type": "application/json", "X-Api-Key": key}
+    request = urllib.request.Request(url, json.dumps(batch).encode(), headers)
     urllib.request.urlopen(request, timeout=2).close()
 
 
@@ -67,13 +66,14 @@ def main() -> None:
     cfg = load_sensors()
     check_config(cfg)
     url = os.environ.get("INGEST_URL", "http://localhost:8080/readings")
+    key = os.environ["INGEST_API_KEY"]  # ingest rejects every batch without it
     scenario = os.environ.get("SCENARIO")
     faults = load_scenario(Path(scenario), cfg) if scenario else []
     _, control = serve(cfg, int(os.environ.get("CONTROL_PORT", "8081")))
     run(
         cfg,
         random.Random(),
-        partial(post, url),
+        partial(post, url, key),
         faults=faults,
         control=control,
     )

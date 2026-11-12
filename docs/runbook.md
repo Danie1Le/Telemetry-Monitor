@@ -35,7 +35,8 @@ Scripts handle steps 6, 7, 11 and 13. The other steps stay manual. Every resourc
    flight=$(kubectl --context kind-telemetry -n telemetry logs deploy/simulator | grep 'flight .* started' | tail -1 | awk '{print $4}')
    # the log line starts with the Flight start time; wait until 60 s into that Flight, then:
    curl -i -X POST localhost:8081/faults -H 'Content-Type: application/json' -d '{"kind":"spike","engine":1,"sensor":"chamber_temp","durationSeconds":2}'   # 202
-   curl "http://localhost:8080/alerts?flightId=$flight"   # threshold and rate_of_change on engine-1.chamber_temp, within ~30 s
+   key=$(kubectl --context kind-telemetry -n telemetry get secret ingest-api-key -o jsonpath='{.data.key}' | base64 -d)
+   curl -H @- "http://localhost:8080/alerts?flightId=$flight" <<<"X-Api-Key: $key"   # threshold and rate_of_change on engine-1.chamber_temp, within ~30 s
    kill $pf
    ```
    The alert email goes to the SNS subscription from step 5. A 400 reply names the invalid field.
@@ -64,7 +65,7 @@ Scripts handle steps 6, 7, 11 and 13. The other steps stay manual. Every resourc
 
 ## Notes
 
-- Steps 6 to 7 need the `kind` cluster, images, Envoy Gateway and KEDA from `scripts/kind-up.sh`. A cluster created before KEDA was added must re-run `scripts/kind-up.sh` before `scripts/aws-up.sh`. `scripts/aws-up.sh` first removes the emulators and the init Job of the `local` overlay. It keeps the `telemetry` Namespace and the `aws-credentials` Secret from step 6.
+- Steps 6 to 7 need the `kind` cluster, images, Envoy Gateway and KEDA from `scripts/kind-up.sh`. A cluster created before KEDA was added must re-run `scripts/kind-up.sh` before `scripts/aws-up.sh`. `scripts/aws-up.sh` first removes the emulators and the init Job of the `local` overlay. It keeps the `telemetry` Namespace and the `aws-credentials` Secret from step 6, and creates the `ingest-api-key` Secret (the `X-Api-Key` value for `POST /readings` and `GET /alerts`) if it is missing.
 - `scripts/aws-key.sh` refuses to create a key while the demo user already has one: run `scripts/aws-key.sh --delete` first.
 - Run step 11 before step 12: the scripts read the demo user name and the Terraform outputs from the state.
 - `aws.env` is generated and gitignored. Nothing account-specific is committed. To render the overlay offline, copy the sample first: `cp k8s/overlays/aws/aws.env.example k8s/overlays/aws/aws.env`, then `kubectl kustomize k8s/overlays/aws`.
