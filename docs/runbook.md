@@ -36,7 +36,7 @@ Scripts handle steps 6, 7, 11 and 13. The other steps stay manual. Every resourc
    # the log line starts with the Flight start time; wait until 60 s into that Flight, then:
    curl -i -X POST localhost:8081/faults -H 'Content-Type: application/json' -d '{"kind":"spike","engine":1,"sensor":"chamber_temp","durationSeconds":2}'   # 202
    key=$(kubectl --context kind-telemetry -n telemetry get secret ingest-api-key -o jsonpath='{.data.key}' | base64 -d)
-   curl -H "X-Api-Key: $key" "http://localhost:8080/alerts?flightId=$flight"   # threshold and rate_of_change on engine-1.chamber_temp, within ~30 s
+   curl -H @- "http://localhost:8080/alerts?flightId=$flight" <<<"X-Api-Key: $key"   # threshold and rate_of_change on engine-1.chamber_temp, within ~30 s
    kill $pf
    ```
    The alert email goes to the SNS subscription from step 5. A 400 reply names the invalid field.

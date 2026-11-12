@@ -50,11 +50,11 @@ uv run --project simulator scripts/measure.py <command>   # scale, sustained, de
 scripts/kind-down.sh
 ```
 
-`GET /alerts` reads a Flight's Alerts. It and `POST /readings` need the `X-Api-Key` header, whose value `scripts/kind-up.sh` generates into the Secret `ingest-api-key`; only `/actuator/health` is open. Flight ids are in `kubectl --context kind-telemetry -n telemetry logs deploy/simulator`.
+`GET /alerts` reads a Flight's Alerts. It and `POST /readings` need the `X-Api-Key` header, whose value `scripts/kind-up.sh` generates into the Secret `ingest-api-key`. Only `/actuator/health` (and its `liveness` and `readiness` groups) is open; every other Actuator endpoint is unexposed. `curl -H @-` reads the header from stdin, which keeps the key off the command line. Flight ids are in `kubectl --context kind-telemetry -n telemetry logs deploy/simulator`.
 
 ```bash
 key=$(kubectl --context kind-telemetry -n telemetry get secret ingest-api-key -o jsonpath='{.data.key}' | base64 -d)
-curl -H "X-Api-Key: $key" "http://localhost:8080/alerts?flightId=<id>"
+curl -H @- "http://localhost:8080/alerts?flightId=<id>" <<<"X-Api-Key: $key"
 ```
 
 ## Run one service on the host
@@ -63,7 +63,7 @@ curl -H "X-Api-Key: $key" "http://localhost:8080/alerts?flightId=<id>"
 
 ```bash
 docker compose up -d
-export INGEST_API_KEY=dev-key                  # any non-blank value: ingest will not start without one
+export INGEST_API_KEY=$(od -An -tx1 -N16 /dev/urandom | tr -d ' \n')   # ingest will not start without one
 (cd ingest && ./gradlew bootRun)               # :8080
 uv run --project simulator python -m simulator # posts to http://localhost:8080/readings
 ```
