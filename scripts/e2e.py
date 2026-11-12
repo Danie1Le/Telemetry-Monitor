@@ -15,6 +15,7 @@ import re
 import subprocess
 import sys
 import time
+import urllib.error
 import urllib.request
 from datetime import UTC, datetime
 from functools import cache
@@ -119,6 +120,12 @@ def run_scenario(scenario: str) -> list[tuple]:
         try:
             for a in alerts(flight_id):
                 appeared.setdefault((a["sensorId"], a["rule"], a["openedAt"]), now)
+        except urllib.error.HTTPError as e:
+            # A wrong key is a setup error, not a missed poll: without this, the
+            # scenarios that expect no Alerts would pass.
+            if e.code in (401, 403):
+                raise
+            print(f"  GET /alerts failed: {e}", flush=True)
         except OSError as e:  # a missed poll only delays `appeared`
             print(f"  GET /alerts failed: {e}", flush=True)
         time.sleep(1)

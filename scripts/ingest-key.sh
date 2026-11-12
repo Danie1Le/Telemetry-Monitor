@@ -5,11 +5,19 @@
 set -euo pipefail
 
 k() { kubectl --context kind-telemetry "$@"; }
-k -n telemetry get secret ingest-api-key >/dev/null 2>&1 && exit 0
-# 32 random bytes as hex.
+# 32 random bytes as hex. Discarded if the Secret already exists.
 key=$(od -An -tx1 -N32 /dev/urandom | tr -d ' \n')
-# printf is a builtin, so the key never appears in a process argument list. `create`, not
-# client-side apply, which would copy the plaintext into the last-applied-configuration annotation.
-printf 'apiVersion: v1\nkind: Secret\nmetadata:\n  name: ingest-api-key\n  namespace: telemetry\nstringData:\n  key: "%s"\n' "$key" |
-  k create -f - >/dev/null
-echo "Secret ingest-api-key created"
+# Create first and treat AlreadyExists as success: a `get` first would hide real errors (wrong
+# context, RBAC, no Namespace) and race a concurrent run. printf is a builtin, so the key never
+# appears in a process argument list. `create`, not client-side apply, which would copy the
+# plaintext into the last-applied-configuration annotation. Only stderr is kept, and it names the
+# Secret, never its data.
+if err=$(printf 'apiVersion: v1\nkind: Secret\nmetadata:\n  name: ingest-api-key\n  namespace: telemetry\nstringData:\n  key: "%s"\n' "$key" |
+  k create -f - 2>&1 >/dev/null); then
+  echo "Secret ingest-api-key created"
+elif [[ $err == *AlreadyExists* ]]; then
+  echo "Secret ingest-api-key exists: keeping its key"
+else
+  echo "$err" >&2
+  exit 1
+fi
