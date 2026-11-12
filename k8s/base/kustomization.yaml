@@ -8,3 +8,4 @@ resources:
   - processor.yaml
   - valkey.yaml
   - gateway.yaml
+  - networkpolicy.yaml

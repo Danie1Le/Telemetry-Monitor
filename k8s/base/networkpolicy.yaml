@@ -1,0 +1,30 @@
+# Ingress limits for the two in-cluster-only services with no auth of their own. Ingest stays
+# open: it is the Gateway's entry point. No namespace default-deny:
+# every other pod stays open. Kubelet probes still pass: NetworkPolicy always allows traffic
+# from the pod's node, and kindnet's kube-network-policies accepts all traffic from root on the
+# node. Exec probes and `kubectl port-forward` connect to localhost inside the pod, which no
+# policy sees.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: valkey
+spec:
+  podSelector:
+    matchLabels: { app: valkey }
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels: { app: processor }
+      ports:
+        - { port: 6379 }
+---
+# No ingress rules: no pod reaches POST /faults. Humans use `kubectl port-forward` (docs/runbook.md).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: simulator
+spec:
+  podSelector:
+    matchLabels: { app: simulator }
+  policyTypes: [Ingress]
