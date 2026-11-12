@@ -4,6 +4,7 @@ on:
   push:
   pull_request:
     branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -72,7 +73,8 @@ jobs:
           cache-to: type=gha,scope=${{ matrix.service }},mode=max
 
   e2e:
-    if: github.event_name == 'pull_request'
+    # Not on other branch pushes: the PR run covers them; main and manual runs test the combined state.
+    if: github.event_name != 'push' || github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
