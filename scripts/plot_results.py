@@ -272,7 +272,7 @@ def detection_chart(theme: dict) -> object:
     fig.subplots_adjust(left=0.11, right=0.72, top=0.72, bottom=0.20)
     header(
         fig,
-        "Time to alert in GET /alerts: AWS is slower for spike and dropout",
+        "Time to alert in GET /alerts, per fault: kind against AWS",
         "Median (dot) and max (ring) seconds from the fault's start to the first poll "
         "that showed the alert",
         theme,
