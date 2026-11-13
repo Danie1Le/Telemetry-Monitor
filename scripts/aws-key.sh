@@ -19,7 +19,8 @@ for t in terraform aws kubectl; do command -v "$t" >/dev/null || { echo "$t not 
 user=$(terraform -chdir=terraform/main output -raw demo_user_name)
 k() { kubectl --context kind-telemetry "$@"; }
 # Assigned on its own line so a failed list stops the script (set -e ignores it inside a for word list).
-keys=$(aws iam list-access-keys --user-name "$user" --query 'AccessKeyMetadata[].AccessKeyId' --output text)
+# tr: the Windows aws CLI ends text output with CRLF, and a stray \r breaks every key ID.
+keys=$(aws iam list-access-keys --user-name "$user" --query 'AccessKeyMetadata[].AccessKeyId' --output text | tr -d '\r')
 
 case "$mode" in
   dry) echo "would create an access key for IAM user $user and apply Secret aws-credentials in namespace telemetry" ;;
@@ -30,7 +31,7 @@ case "$mode" in
     # printf is a builtin, so the secret never appears in a process argument list.
     # Server-side apply: client-side apply would copy the plaintext into the last-applied-configuration annotation.
     aws iam create-access-key --user-name "$user" --query 'AccessKey.[AccessKeyId,SecretAccessKey]' --output text |
-      { read -r id secret; printf 'apiVersion: v1\nkind: Secret\nmetadata:\n  name: aws-credentials\n  namespace: telemetry\nstringData:\n  AWS_ACCESS_KEY_ID: "%s"\n  AWS_SECRET_ACCESS_KEY: "%s"\n' "$id" "$secret"; } |
+      { read -r id secret; secret=${secret%$'\r'}; printf 'apiVersion: v1\nkind: Secret\nmetadata:\n  name: aws-credentials\n  namespace: telemetry\nstringData:\n  AWS_ACCESS_KEY_ID: "%s"\n  AWS_SECRET_ACCESS_KEY: "%s"\n' "$id" "$secret"; } |
       k apply --server-side -f - >/dev/null
     echo "Secret aws-credentials created for $user" ;;
   delete)
