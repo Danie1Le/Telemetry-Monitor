@@ -22,7 +22,7 @@ Measured on a local kind cluster. [RESULTS.md](RESULTS.md) has the hardware, com
 - Alerts appear in `GET /alerts` [2.3 s (dropout)](RESULTS.md#detect-dropout), [5.4 s (stuck)](RESULTS.md#detect-stuck) and [11.5 s (drift)](RESULTS.md#detect-drift) after the fault starts (median of 10 runs, understated by up to about 1 s: [see the note](RESULTS.md#appeared)).
 - [No lost or extra readings or alerts](RESULTS.md#chaos) with 29 processor pods force-deleted during a 5-minute load.
 - [100% statement coverage of the anomaly rules](RESULTS.md#coverage-rules), and [99% of processor statements and 97% of ingest instructions](RESULTS.md#coverage).
-- AWS numbers are pending the run in [docs/runbook.md](docs/runbook.md).
+- [On AWS](RESULTS.md#aws-throughput) (real SQS, DynamoDB and SNS; services on kind), 150 readings/s, the cap for the 20 WCU table, were accepted with no failures and no throttling, but the queue was not flat: [see the note](RESULTS.md#aws-note).
 
 ## Layout
 

@@ -52,7 +52,7 @@ Scripts handle steps 6, 7, 11 and 13. The other steps stay manual. Every resourc
      echo "$t $m: $(aws cloudwatch get-metric-statistics --region us-east-2 --namespace AWS/DynamoDB --metric-name $m --dimensions Name=TableName,Value=$t --start-time $start --end-time $end --period 60 --statistics Sum --query 'sum(Datapoints[].Sum)' --output text)"
    done; done   # all four must be 0
    ```
-   The run writes `results/<UTC date>/`. `measure.py` does not check throttling, so the loop above is the check. CloudWatch lags a few minutes: re-run the loop with a later `end` before trusting a 0. At 3 Batches/s the queue stays far below the KEDA target of 100 messages per replica, so expect one processor replica and no scale-up (`kubectl --context kind-telemetry -n telemetry get hpa -w`). Label the AWS numbers as AWS and the capped rate.
+   The run writes `results/<UTC date>/`. `measure.py` does not check throttling, so the loop above is the check. CloudWatch lags a few minutes: re-run the loop with a later `end` before trusting a 0. At 3 Batches/s the queue still passed the KEDA target of 100 messages per replica on the 2026-11-13 run, so expect KEDA to add a second processor replica ([why](../RESULTS.md#aws-note); watch with `kubectl --context kind-telemetry -n telemetry get hpa -w`). Label the AWS numbers as AWS and the capped rate.
 10. [ ] Optionally, take console screenshots of the queue, the tables, the alarm, and the billing page at $0.
 11. [ ] Run `scripts/aws-down.sh` (`kubectl delete -k k8s/overlays/aws`), then `scripts/aws-key.sh --delete` to delete the Secret and the IAM access key.
 12. [ ] Run `terraform/main` destroy. Optional: save the output.

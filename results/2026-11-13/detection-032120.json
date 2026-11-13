@@ -1,0 +1,168 @@
+{
+  "runs": 3,
+  "rows": [
+    {
+      "scenario": "spike",
+      "sensorId": "engine-1.chamber_temp",
+      "rule": "rate_of_change",
+      "opened": 0.0,
+      "appeared": 26.360903024673462,
+      "run": 1
+    },
+    {
+      "scenario": "spike",
+      "sensorId": "engine-1.chamber_temp",
+      "rule": "threshold",
+      "opened": 0.0,
+      "appeared": 26.360903024673462,
+      "run": 1
+    },
+    {
+      "scenario": "spike",
+      "sensorId": "engine-1.chamber_temp",
+      "rule": "rate_of_change",
+      "opened": 0.0,
+      "appeared": 21.66237735748291,
+      "run": 3
+    },
+    {
+      "scenario": "spike",
+      "sensorId": "engine-1.chamber_temp",
+      "rule": "threshold",
+      "opened": 0.0,
+      "appeared": 21.66237735748291,
+      "run": 3
+    },
+    {
+      "scenario": "dropout",
+      "sensorId": "engine-1.tank_pressure",
+      "rule": "dropout",
+      "opened": 0.0,
+      "appeared": 28.93403458595276,
+      "run": 1
+    },
+    {
+      "scenario": "dropout",
+      "sensorId": "engine-1.tank_pressure",
+      "rule": "dropout",
+      "opened": 0.0,
+      "appeared": 15.136087894439697,
+      "run": 2
+    },
+    {
+      "scenario": "dropout",
+      "sensorId": "engine-1.tank_pressure",
+      "rule": "dropout",
+      "opened": 0.0,
+      "appeared": 2.665494203567505,
+      "run": 3
+    },
+    {
+      "scenario": "stuck",
+      "sensorId": "engine-1.fuel_flow",
+      "rule": "flatline",
+      "opened": 0.0,
+      "appeared": 18.658980131149292,
+      "run": 1
+    },
+    {
+      "scenario": "stuck",
+      "sensorId": "engine-1.fuel_flow",
+      "rule": "flatline",
+      "opened": 0.0,
+      "appeared": 5.487996816635132,
+      "run": 2
+    },
+    {
+      "scenario": "stuck",
+      "sensorId": "engine-1.fuel_flow",
+      "rule": "flatline",
+      "opened": 0.0,
+      "appeared": 5.480018138885498,
+      "run": 3
+    },
+    {
+      "scenario": "drift",
+      "sensorId": "engine-1.vibration",
+      "rule": "drift",
+      "opened": 8.0,
+      "appeared": 14.340065240859985,
+      "run": 1
+    },
+    {
+      "scenario": "drift",
+      "sensorId": "engine-1.vibration",
+      "rule": "drift",
+      "opened": 8.0,
+      "appeared": 14.687600374221802,
+      "run": 2
+    },
+    {
+      "scenario": "drift",
+      "sensorId": "engine-1.vibration",
+      "rule": "drift",
+      "opened": 8.0,
+      "appeared": 11.916064500808716,
+      "run": 3
+    }
+  ],
+  "failures": [
+    {
+      "scenario": "spike",
+      "run": 2,
+      "error": "spike: alerts []"
+    }
+  ],
+  "summary": [
+    {
+      "scenario": "drift",
+      "sensorId": "engine-1.vibration",
+      "rule": "drift",
+      "runs": 3,
+      "openedMedian": 8.0,
+      "openedMax": 8.0,
+      "appearedMedian": 14.3,
+      "appearedMax": 14.7
+    },
+    {
+      "scenario": "dropout",
+      "sensorId": "engine-1.tank_pressure",
+      "rule": "dropout",
+      "runs": 3,
+      "openedMedian": 0.0,
+      "openedMax": 0.0,
+      "appearedMedian": 15.1,
+      "appearedMax": 28.9
+    },
+    {
+      "scenario": "spike",
+      "sensorId": "engine-1.chamber_temp",
+      "rule": "rate_of_change",
+      "runs": 2,
+      "openedMedian": 0.0,
+      "openedMax": 0.0,
+      "appearedMedian": 24.0,
+      "appearedMax": 26.4
+    },
+    {
+      "scenario": "spike",
+      "sensorId": "engine-1.chamber_temp",
+      "rule": "threshold",
+      "runs": 2,
+      "openedMedian": 0.0,
+      "openedMax": 0.0,
+      "appearedMedian": 24.0,
+      "appearedMax": 26.4
+    },
+    {
+      "scenario": "stuck",
+      "sensorId": "engine-1.fuel_flow",
+      "rule": "flatline",
+      "runs": 3,
+      "openedMedian": 0.0,
+      "openedMax": 0.0,
+      "appearedMedian": 5.5,
+      "appearedMax": 18.7
+    }
+  ]
+}
