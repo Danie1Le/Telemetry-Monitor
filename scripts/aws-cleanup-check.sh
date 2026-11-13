@@ -16,19 +16,20 @@ command -v aws >/dev/null || { echo "aws not found" >&2; exit 1; }
 user=telemetry-monitor-demo
 left=0
 # Also fails fast on bad credentials, and shows which account was checked.
-account=$(aws sts get-caller-identity --query Account --output text)
+# tr: the Windows aws CLI ends text output with CRLF, and a stray \r would corrupt messages and make an empty list look non-empty.
+account=$(aws sts get-caller-identity --query Account --output text | tr -d '\r')
 
 # The bootstrap budgets carry the same tag and are kept on purpose until the account is closed.
 arns=$(aws resourcegroupstaggingapi get-resources --region us-east-2 \
   --tag-filters Key=Project,Values=telemetry-monitor \
-  --query 'ResourceTagMappingList[].ResourceARN' --output text)
+  --query 'ResourceTagMappingList[].ResourceARN' --output text | tr -d '\r')
 arns=$(printf '%s' "$arns" | tr '\t' '\n' | grep -v ':budgets::' || true)
 if [ -n "$arns" ]; then echo "tagged resources left in account $account:"; echo "$arns"; left=1; fi
 
 # IAM is global and the tagging API can miss users, so ask IAM directly. Only NoSuchEntity means gone.
 if err=$(aws iam get-user --user-name "$user" 2>&1 >/dev/null); then
   echo "IAM user left in account $account: $user"
-  keys=$(aws iam list-access-keys --user-name "$user" --query 'AccessKeyMetadata[].AccessKeyId' --output text)
+  keys=$(aws iam list-access-keys --user-name "$user" --query 'AccessKeyMetadata[].AccessKeyId' --output text | tr -d '\r')
   if [ -n "$keys" ]; then echo "access keys left: $keys"; fi
   left=1
 elif [[ $err != *NoSuchEntity* ]]; then
