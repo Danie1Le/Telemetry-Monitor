@@ -51,11 +51,11 @@ Detection time in `GET /alerts`, kind against AWS ([kind rows](RESULTS.md#detect
 
 <img src="docs/img/aws-alerts-table.png" alt="AWS DynamoDB console, alerts table scan: 2 items returned, both for one flight, opened in the ascent phase on a chamber_temp sensor, one by the rate_of_change rule and one by the threshold rule.">
 
-The runbook demo's spike raised two Alerts (threshold and rate_of_change), here in the real DynamoDB `alerts` table; the scan timestamp, November 12, 2026 18:47:15, is console local time (UTC-8), so 02:47:15Z the next day ([AWS note](RESULTS.md#aws-note)).
+The runbook demo's spike raised two Alerts (threshold and rate_of_change), here in the real DynamoDB `alerts` table; the scan time shown is console local time (UTC-8), 02:47Z on November 13 ([AWS note](RESULTS.md#aws-note)).
 
 <img src="docs/img/aws-readings-writes.png" alt="AWS DynamoDB console metrics for the readings table: write usage against the 20 provisioned WCU line, and the write throttled requests and throttled events panels showing no data.">
 
-The `readings` table's write usage against its 20 provisioned WCU, with no throttled requests or events ([AWS capped-rate row](RESULTS.md#aws-throughput)). Axis is UTC; the measured run was 02:48-03:21Z including detection. Consumed exceeds 20 WCU only before it, peaking at 31.6 near 02:44Z: the processor draining a backlog from crash-looping on a bad credential (the line-ending bug fixed in #8) with KEDA at 4 replicas. DynamoDB burst capacity absorbed it, hence no throttles.
+The `readings` table's write usage against its 20 provisioned WCU, with no throttled requests or events ([AWS capped-rate row](RESULTS.md#aws-throughput)). The axis is UTC. The 31.6 peak near 02:44Z came before the measured run (02:48-03:21Z): the processor draining a backlog built while it crash-looped on a bad credential ([PR #8](https://github.com/Danie1Le/Telemetry-Monitor/pull/8)). DynamoDB burst capacity absorbed every excursion above 20 WCU: 0 throttle events.
 
 ## Layout
 
