@@ -56,8 +56,8 @@ offset was not investigated and nothing was re-run.
 and SNS in us-east-2), while ingest, the processor, the simulator and KEDA ran on the local kind
 cluster, as [docs/runbook.md](docs/runbook.md) designs it. Images were built from c3b0806; the
 only local change during the run was a line-ending fix to `scripts/aws-key.sh`
-([PR #8](https://github.com/Danie1Le/Telemetry-Monitor/pull/8), not in c3b0806, applied locally),
-which deploys nothing. The rate is capped at 3 batches/s (150 readings/s): the `readings` table
+([PR #8](https://github.com/Danie1Le/Telemetry-Monitor/pull/8), merged after the run as cd3718c; the
+cleanup check ran unpatched), which deploys nothing. The rate is capped at 3 batches/s (150 readings/s): the `readings` table
 has 20 provisioned WCU and one batch writes 5 items, so it throttles above 4 batches/s. The
 simulator was scaled to 0 so it added no writes. Nothing throttled: the runbook's CloudWatch
 loop (Sum, period 60, 02:47:51Z to 03:24:25Z, re-run after CloudWatch's lag) gave 0
@@ -89,7 +89,8 @@ matches kind.
 The runbook's demo (step 8) also worked: a spike posted 75 s into a flight returned 202, GET
 /alerts showed threshold and rate_of_change on `engine-1.chamber_temp` 5 s later, and the alert
 email arrived. Afterwards `terraform destroy` removed 11 of 11 resources,
-`scripts/aws-cleanup-check.sh` found nothing tagged and no demo user or keys left, and the
+`scripts/aws-cleanup-check.sh` found nothing tagged left apart from the bootstrap budgets (which
+were then destroyed too) and no demo user or keys, and the
 billing page showed $0.00. None of these was saved to `results/`.
 
 <a id="sustained-attempts"></a>Every sustained attempt, in order. Only the last passed:
