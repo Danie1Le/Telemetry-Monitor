@@ -24,6 +24,39 @@ Measured on a local kind cluster, and once with real AWS queues and tables (last
 - [100% statement coverage of the anomaly rules](RESULTS.md#coverage-rules), and [99% of processor statements and 97% of ingest instructions](RESULTS.md#coverage).
 - [On AWS](RESULTS.md#aws-throughput) (real SQS, DynamoDB and SNS; services on kind), 150 readings/s (3 batches/s, under the 20 WCU table's 200 readings/s limit) were accepted with no failures and no throttling, but the queue was not flat: [see the note](RESULTS.md#aws-note).
 
+### Results in pictures
+
+Charts are drawn from the raw files in `results/` by [scripts/plot_results.py](scripts/plot_results.py) (`uv run scripts/plot_results.py`).
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/img/kind-scaling-dark.svg">
+  <img src="docs/img/kind-scaling-light.svg" alt="Line chart of queue depth and a step chart of Ready processor replicas over the 600 s kind sustained run at 30 batches/s: the queue rises and falls in a sawtooth up to 698 messages while KEDA moves the processor between 1 and 5 replicas; the last-minute mean queue depth (178.0) is below the first-minute mean (236.6).">
+</picture>
+
+kind, 30 batches/s for 10 minutes: KEDA scales between 1 and 5 replicas and the queue does not grow ([throughput row](RESULTS.md#throughput)).
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/img/aws-scaling-dark.svg">
+  <img src="docs/img/aws-scaling-light.svg" alt="Line chart of queue depth and a step chart of Ready processor replicas over the 600 s AWS capped-rate run at 3 batches/s, with the KEDA target of 100 messages per replica as a horizontal line: the queue climbs past 100 three times, KEDA adds a second replica each time, and the queue peaks at 146.">
+</picture>
+
+AWS, 3 batches/s for 10 minutes: one replica falls behind and KEDA adds a second three times ([AWS capped-rate row](RESULTS.md#aws-throughput), [note](RESULTS.md#aws-note)).
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/img/detection-dark.svg">
+  <img src="docs/img/detection-light.svg" alt="Dot plot of the time from each fault's start until GET /alerts showed the alert, median and max, kind (10 runs) against AWS (3 runs). Spike: kind -0.6 / -0.0 s, AWS 24.0 / 26.4 s (2 of 3 runs). Dropout: kind 2.3 / 2.8 s, AWS 15.1 / 28.9 s. Stuck: kind 5.4 / 5.9 s, AWS 5.5 / 18.7 s. Drift: kind 11.5 / 14.0 s, AWS 14.3 / 14.7 s.">
+</picture>
+
+Detection time in `GET /alerts`, kind against AWS ([kind rows](RESULTS.md#detect-spike), [AWS row](RESULTS.md#aws-detection); kind spike is below 0 s from clock offset: [see the note](RESULTS.md#appeared)).
+
+<img src="docs/img/aws-alerts-table.png" alt="AWS DynamoDB console, alerts table scan: 2 items returned, both for one flight, opened in the ascent phase on a chamber_temp sensor, one by the rate_of_change rule and one by the threshold rule.">
+
+The runbook demo's spike raised two Alerts (threshold and rate_of_change), here in the real DynamoDB `alerts` table ([AWS note](RESULTS.md#aws-note)).
+
+<img src="docs/img/aws-readings-writes.png" alt="AWS DynamoDB console metrics for the readings table: write usage against the 20 provisioned WCU line, and the write throttled requests and throttled events panels showing no data.">
+
+The `readings` table's write usage against its 20 provisioned WCU, with no throttled requests or events ([AWS capped-rate row](RESULTS.md#aws-throughput)).
+
 ## Layout
 
 | Path | What |
