@@ -14,7 +14,7 @@ simulator --HTTP Batch--> ingest --> SQS --> processor --> DynamoDB (readings, a
 
 ## Results
 
-Measured on a local kind cluster. [RESULTS.md](RESULTS.md) has the hardware, commands and raw output.
+Measured on a local kind cluster, and once with real AWS queues and tables (last bullet). [RESULTS.md](RESULTS.md) has the hardware, commands and raw output.
 
 - [1,500 readings/s sustained for 10 minutes](RESULTS.md#throughput), with a [9.13 ms p95 ingest latency](RESULTS.md#p95).
 - [Ramp: no failures up to 2,000 readings/s](RESULTS.md#ramp), in 2-minute steps (a 10-minute run at that rate failed: see the [attempts](RESULTS.md#sustained-attempts)).
@@ -22,7 +22,7 @@ Measured on a local kind cluster. [RESULTS.md](RESULTS.md) has the hardware, com
 - Alerts appear in `GET /alerts` [2.3 s (dropout)](RESULTS.md#detect-dropout), [5.4 s (stuck)](RESULTS.md#detect-stuck) and [11.5 s (drift)](RESULTS.md#detect-drift) after the fault starts (median of 10 runs, understated by up to about 1 s: [see the note](RESULTS.md#appeared)).
 - [No lost or extra readings or alerts](RESULTS.md#chaos) with 29 processor pods force-deleted during a 5-minute load.
 - [100% statement coverage of the anomaly rules](RESULTS.md#coverage-rules), and [99% of processor statements and 97% of ingest instructions](RESULTS.md#coverage).
-- [On AWS](RESULTS.md#aws-throughput) (real SQS, DynamoDB and SNS; services on kind), 150 readings/s, the cap for the 20 WCU table, were accepted with no failures and no throttling, but the queue was not flat: [see the note](RESULTS.md#aws-note).
+- [On AWS](RESULTS.md#aws-throughput) (real SQS, DynamoDB and SNS; services on kind), 150 readings/s (3 batches/s, under the 20 WCU table's 200 readings/s limit) were accepted with no failures and no throttling, but the queue was not flat: [see the note](RESULTS.md#aws-note).
 
 ## Layout
 

@@ -20,7 +20,7 @@ KEDA still on the kind cluster. [See the AWS note](#aws-note).
 | <a id="scale-up"></a>KEDA scale-up: queue over target to second replica Ready | 21.6 s / 102.3 s (two ramps). In ramp 2 the queue passed 100 for one sample at 171 s and fell back before KEDA scaled; from its next crossing, 22.7 s | kind | 2026-11-10 | 4b5664e | `measure.py scale --steps 5,10,20,40,80 --step-seconds 120`, run twice | i7-9700F, 16 GB host; Docker Desktop 8 CPU, 7.7 GiB | [ramp 1](results/2026-11-10/scale-021913.json) ([k6](results/2026-11-10/scale-021913-k6.txt)), [ramp 2](results/2026-11-10/scale-023501.json) ([k6](results/2026-11-10/scale-023501-k6.txt)) |
 | <a id="scale-down"></a>KEDA scale-down: queue drained to one replica | 44.6 s / 56.9 s (two ramps) | kind | 2026-11-10 | 4b5664e | `measure.py scale --steps 5,10,20,40,80 --step-seconds 120`, run twice | i7-9700F, 16 GB host; Docker Desktop 8 CPU, 7.7 GiB | [ramp 1](results/2026-11-10/scale-021913.json) ([k6](results/2026-11-10/scale-021913-k6.txt)), [ramp 2](results/2026-11-10/scale-023501.json) ([k6](results/2026-11-10/scale-023501-k6.txt)) |
 | <a id="chaos"></a>Chaos: stored readings and alerts vs expected, pods killed | Pass: 15,000 / 15,000 stored `readings` items (3,000 batches x 5 sensors = 150,000 Readings) and 20 / 20 alerts (10 engines x threshold and rate_of_change), none missing or extra; 29 processor pods force-deleted; all 3,001 requests accepted (3,000 distinct batches, [see note](#chaos-note)); nothing dead-lettered | kind | 2026-11-10 | 0707122 | `measure.py chaos --duration 300` (10 batches/s, visibility timeout 5 s, one pod killed every 10 s), on a new cluster | i7-9700F, 16 GB host; Docker Desktop 8 CPU, 7.7 GiB | [results/2026-11-10/chaos-101220.json](results/2026-11-10/chaos-101220.json) ([k6](results/2026-11-10/chaos-101220-k6.txt)) |
-| <a id="aws-throughput"></a>Capped-rate 10 min run: readings/s, p95 | 150 (3 batches/s, the cap for the 20 WCU `readings` table): k6 passed (1,800 / 1,800 batches accepted, 0 rejected, 0 failed requests, 0 dropped), p95 124.29 ms (median 72.21 ms, max 686.36 ms), nothing dead-lettered, 0 DynamoDB throttle events. Not sustained by `measure.py`'s rule: queue depth is a 0-146 sawtooth as KEDA scales the processor between 1 and 2 replicas, and the last-minute mean (101.6) is above the first-minute mean (8.8) + 10. [See note](#aws-note) | AWS | 2026-11-13 | c3b0806 | `measure.py sustained --rate 3 --duration 600` (3 batches/s), simulator scaled to 0; throttling from the runbook step 9 CloudWatch loop | i7-9700F, 16 GB host; Docker Desktop 8 CPU, 7.7 GiB | [results/2026-11-13/sustained-024818.json](results/2026-11-13/sustained-024818.json) ([k6](results/2026-11-13/sustained-024818-k6.txt), [k6 summary](results/2026-11-13/sustained-024818-k6-summary.json)) |
+| <a id="aws-throughput"></a>Capped-rate 10 min run: readings/s, p95 | 150 (3 batches/s, 15 of the 20 WCU on the `readings` table, which throttles above 4 batches/s): k6 passed (1,800 / 1,800 batches accepted, 0 rejected, 0 failed requests, 0 dropped), p95 124.29 ms (median 72.21 ms, max 686.4 ms), nothing dead-lettered, 0 DynamoDB throttle events (CloudWatch, not saved: [see note](#aws-note)). Not sustained by `measure.py`'s rule: queue depth is a 0-146 sawtooth as KEDA scales the processor between 1 and 2 replicas, and the last-minute mean (101.6) is above the first-minute mean (8.8) + 10. [See note](#aws-note) | AWS | 2026-11-13 | c3b0806 | `measure.py sustained --rate 3 --duration 600` (3 batches/s), simulator scaled to 0; throttling from the runbook step 9 CloudWatch loop | i7-9700F, 16 GB host; Docker Desktop 8 CPU, 7.7 GiB | [results/2026-11-13/sustained-024818.json](results/2026-11-13/sustained-024818.json) ([k6](results/2026-11-13/sustained-024818-k6.txt), [k6 summary](results/2026-11-13/sustained-024818-k6-summary.json)) |
 | <a id="aws-detection"></a>Detection time per fault: median / max (**3 runs per fault**) | Spike (2 of 3 runs, [see note](#aws-note)): openedAt 0.0 s / 0.0 s, in GET /alerts 24.0 s / 26.4 s (threshold and rate_of_change). Dropout: openedAt 0.0 s / 0.0 s, in GET /alerts 15.1 s / 28.9 s. Stuck: openedAt 0.0 s / 0.0 s, in GET /alerts 5.5 s / 18.7 s. Drift: openedAt 8.0 s / 8.0 s, in GET /alerts 14.3 s / 14.7 s | AWS | 2026-11-13 | c3b0806 | `measure.py detection --runs 3`, right after the capped-rate run, simulator back at 1 replica | i7-9700F, 16 GB host; Docker Desktop 8 CPU, 7.7 GiB | [results/2026-11-13/detection-032120.json](results/2026-11-13/detection-032120.json) |
 | <a id="coverage-rules"></a>Coverage, anomaly rules | 100% of statements (`rules.py`, 115) | local | 2026-11-10 | 0707122 | `cd processor && uv run pytest -q --cov=processor` (167 passed) | n/a | [results/2026-11-10/coverage-processor.txt](results/2026-11-10/coverage-processor.txt) |
 | <a id="coverage"></a>Coverage, overall | Processor 99% of statements (378); ingest 97% of instructions, 79% of branches (JaCoCo) | local | 2026-11-10 | 0707122 | `cd processor && uv run pytest -q --cov=processor` (167 passed); `cd ingest && ./gradlew test jacocoTestReport -q` (32 passed) | n/a | [processor](results/2026-11-10/coverage-processor.txt), [ingest](results/2026-11-10/coverage-ingest.txt) |
@@ -55,24 +55,28 @@ offset was not investigated and nothing was re-run.
 <a id="aws-note"></a>AWS run, 2026-11-13: the queue, tables and topic were real (SQS, DynamoDB
 and SNS in us-east-2), while ingest, the processor, the simulator and KEDA ran on the local kind
 cluster, as [docs/runbook.md](docs/runbook.md) designs it. Images were built from c3b0806; the
-only local change during the run was a line-ending fix to `scripts/aws-key.sh` (#8), which
-deploys nothing. The rate is capped at 3 batches/s (150 readings/s): the `readings` table has 20
-provisioned WCU and one batch writes 5 items, so it throttles above 4 batches/s. The simulator
-was scaled to 0 so it added no writes. Nothing throttled: the runbook's CloudWatch loop (Sum,
-period 60, 02:47:51Z to 03:24:25Z, re-run after CloudWatch's lag) gave 0 WriteThrottleEvents
-and 0 ReadThrottleEvents on both `readings` and `alerts`. Its output was not saved to
-`results/`.
+only local change during the run was a line-ending fix to `scripts/aws-key.sh`
+([PR #8](https://github.com/Danie1Le/Telemetry-Monitor/pull/8), not in c3b0806, applied locally),
+which deploys nothing. The rate is capped at 3 batches/s (150 readings/s): the `readings` table
+has 20 provisioned WCU and one batch writes 5 items, so it throttles above 4 batches/s. The
+simulator was scaled to 0 so it added no writes. Nothing throttled: the runbook's CloudWatch
+loop (Sum, period 60, 02:47:51Z to 03:24:25Z, re-run after CloudWatch's lag) gave 0
+WriteThrottleEvents and 0 ReadThrottleEvents on both `readings` and `alerts`. Its output was not
+saved to `results/`.
 
 The capped-rate run fails `measure.py`'s queue-not-growing check even though k6 passed. One
 processor replica fell behind, the queue passed the KEDA target of 100 messages per replica,
-KEDA added a second replica (three times: about 177 s, 403 s and 598 s in), the two replicas
-drained the queue, and KEDA went back to one. The queue was at 100 or more in 36 of 125
-samples, and was empty 48 s after the load stopped. The likely cause, not proven: the processor
-runs on the laptop and makes a round trip to us-east-2 for every SQS receive and delete and
-every DynamoDB write, so one replica drains far fewer batches/s than on kind, where the same
-code held 30 batches/s against ElasticMQ and DynamoDB Local in the cluster. The same round
-trip, from ingest's send to SQS, likely explains the higher ingest p95 (124.29 ms against
-9.13 ms on kind).
+and KEDA asked for a second replica three times (about 177 s, 403 s and 599 s after the run
+started; Ready 9-11 s later each time). The first two times, the two replicas brought the queue
+back under 100 (to 2 the first time, 55 the second) and KEDA went back to one. The third time,
+the load ended about 6 s after the second replica was Ready, and the queue drained to 0 before
+KEDA went back to one. The queue was at 100 or more in 36 of the 125 samples taken during the
+load, and was first empty 48 s after the load stopped. The likely cause, not proven: the
+processor runs on the kind cluster on the host and makes a round trip to us-east-2 for every SQS
+receive and delete and every DynamoDB write, so one replica drains far fewer batches/s than
+against ElasticMQ and DynamoDB Local in the cluster, where the kind setup held 30 batches/s at
+4b5664e. The same round trip, from ingest's send to SQS, likely explains the higher ingest p95
+(124.29 ms against 9.13 ms on kind at 4b5664e).
 
 Detection ran right after, with the simulator back at 1 replica. Spike has 2 of 3 runs: run 2
 saw no alert in GET /alerts before its poll window closed, 32 s after the fault started
@@ -86,7 +90,7 @@ The runbook's demo (step 8) also worked: a spike posted 75 s into a flight retur
 /alerts showed threshold and rate_of_change on `engine-1.chamber_temp` 5 s later, and the alert
 email arrived. Afterwards `terraform destroy` removed 11 of 11 resources,
 `scripts/aws-cleanup-check.sh` found nothing tagged and no demo user or keys left, and the
-billing page showed $0.00. Neither was saved to `results/`.
+billing page showed $0.00. None of these was saved to `results/`.
 
 <a id="sustained-attempts"></a>Every sustained attempt, in order. Only the last passed:
 
