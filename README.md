@@ -16,7 +16,8 @@ flowchart LR
         sim[simulator]
         gw[Envoy Gateway]
         ing["ingest<br/>(Java)"]
-        proc["processor<br/>(Python, KEDA-scaled)"]
+        proc["processor<br/>(Python)"]
+        keda[KEDA]
         valkey[(Valkey)]
     end
     subgraph aws["AWS, or local emulators"]
@@ -25,14 +26,17 @@ flowchart LR
         ddb[("DynamoDB<br/>readings, alerts")]
         sns["SNS alerts"]
     end
-    email([Email])
+    email(["Email (AWS only)"])
 
     sim -->|"POST /readings (Batch)<br/>X-Api-Key"| ing
     client -->|"GET /alerts<br/>X-Api-Key"| gw
     gw --> ing
     ing --> sqs
     sqs -.->|"failed repeatedly"| dlq
-    sqs -->|"queue depth scales it"| proc
+    sqs -->|"poll, delete"| proc
+    proc -.->|"poison messages"| dlq
+    keda -.->|"reads queue depth"| sqs
+    keda -.->|"scales"| proc
     proc <-->|"Rule state"| valkey
     proc --> ddb
     proc --> sns
