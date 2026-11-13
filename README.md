@@ -1,15 +1,47 @@
 # Telemetry Monitor
 
+[![ci](https://github.com/Danie1Le/Telemetry-Monitor/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Danie1Le/Telemetry-Monitor/actions/workflows/ci.yml?query=branch%3Amain)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 Telemetry Monitor is a small streaming pipeline. A simulated launch vehicle posts sensor Readings over HTTP. An ingest service validates them and queues them on SQS. A processor stores them in DynamoDB, runs anomaly Rules and records Alerts, which `GET /alerts` serves. It runs on Kubernetes (kind) with the queue, tables and topics emulated locally, and the same manifests can target real AWS. It demonstrates a Java and Python service pair behind JSON-schema contracts, queue-depth autoscaling with KEDA, at-least-once processing made safe by idempotent writes and a reorder buffer, and load, detection-time and chaos measurements.
 
 CLAUDE.md and docs/agents/ configure the AI coding agents used to build the project.
 
 Terms (Reading, Batch, Flight, Phase, Fault, Alert...) are defined in [GLOSSARY.md](GLOSSARY.md). Design decisions: [docs/adr/](docs/adr/).
 
-```
-simulator --HTTP Batch--> ingest --> SQS --> processor --> DynamoDB (readings, alerts) + SNS
-                                                 |
-                                       Valkey (Rule state)     GET /alerts (ingest) <-- DynamoDB
+```mermaid
+flowchart LR
+    client([Client])
+    subgraph k8s["Kubernetes (kind)"]
+        sim[simulator]
+        gw[Envoy Gateway]
+        ing["ingest<br/>(Java)"]
+        proc["processor<br/>(Python)"]
+        keda[KEDA]
+        valkey[(Valkey)]
+    end
+    subgraph aws["AWS, or local emulators"]
+        sqs[/"SQS readings"/]
+        dlq[/"SQS DLQ"/]
+        ddb[("DynamoDB<br/>readings, alerts")]
+        sns["SNS alerts"]
+    end
+    email(["Email (AWS only)"])
+
+    sim -->|"POST /readings (Batch)<br/>X-Api-Key"| ing
+    client -->|"GET /alerts<br/>X-Api-Key"| gw
+    gw --> ing
+    ing --> sqs
+    sqs -.->|"failed repeatedly"| dlq
+    sqs -->|"poll, delete"| proc
+    proc -.->|"poison messages"| dlq
+    keda -.->|"reads queue depth"| sqs
+    keda -.->|"scales"| proc
+    proc <-->|"Rule state"| valkey
+    proc --> ddb
+    proc --> sns
+    sns --> email
+    ing -->|"read Alerts"| ddb
 ```
 
 ## Results
