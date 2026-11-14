@@ -1,6 +1,6 @@
 # Telemetry Monitor
 
-[![ci](https://github.com/Danie1Le/Telemetry-Monitor/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Danie1Le/Telemetry-Monitor/actions/workflows/ci.yml?query=branch%3Amain)
+[![ci](https://github.com/Danie1Le/Rocket-Telemetry-Monitor/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Danie1Le/Rocket-Telemetry-Monitor/actions/workflows/ci.yml?query=branch%3Amain)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 Telemetry Monitor is a small streaming pipeline that watches telemetry from a simulated launch vehicle and raises Alerts when it detects anomalies.
@@ -94,7 +94,7 @@ The runbook demo's spike raised two Alerts (threshold and rate_of_change), shown
 
 <img src="docs/img/aws-readings-writes.png" alt="AWS DynamoDB console metrics for the readings table: write usage against the 20 provisioned WCU line, and the write throttled requests and throttled events panels showing no data.">
 
-The `readings` table's write usage against its 20 provisioned WCU, with no throttled requests or events ([AWS capped-rate row](RESULTS.md#aws-throughput)). The axis is UTC. The 31.6 peak near 02:44Z came before the measured run (02:48-03:21Z). It is the processor draining a backlog that built up while it crash-looped on a bad credential ([PR #8](https://github.com/Danie1Le/Telemetry-Monitor/pull/8)). DynamoDB burst capacity absorbed every excursion above 20 WCU, with 0 throttle events.
+The `readings` table's write usage against its 20 provisioned WCU, with no throttled requests or events ([AWS capped-rate row](RESULTS.md#aws-throughput)). The axis is UTC. The 31.6 peak near 02:44Z came before the measured run (02:48-03:21Z). It is the processor draining a backlog that built up while it crash-looped on a bad credential ([PR #8](https://github.com/Danie1Le/Rocket-Telemetry-Monitor/pull/8)). DynamoDB burst capacity absorbed every excursion above 20 WCU, with 0 throttle events.
 
 ## Layout
 
@@ -122,7 +122,7 @@ uv run --project simulator scripts/measure.py <command>   # scale, sustained, de
 scripts/kind-down.sh
 ```
 
-`GET /alerts` returns a Flight's Alerts. Both it and `POST /readings` need the `X-Api-Key` header. `scripts/kind-up.sh` generates the key into the Secret `ingest-api-key`. Only `/actuator/health` (and its `liveness` and `readiness` groups) is open; no other Actuator endpoint is exposed. In the example below, `curl -H @-` reads the header from stdin, which keeps the key off the command line. Flight ids are in `kubectl --context kind-telemetry -n telemetry logs deploy/simulator`.
+`GET /alerts` returns a Flight's Alerts. Both `GET /alerts` and `POST /readings` need the `X-Api-Key` header. `scripts/kind-up.sh` generates the key into the Secret `ingest-api-key`. Only `/actuator/health` (and its `liveness` and `readiness` groups) is open; no other Actuator endpoint is exposed. In the example below, `curl -H @-` reads the header from stdin, which keeps the key off the command line. Flight ids are in `kubectl --context kind-telemetry -n telemetry logs deploy/simulator`.
 
 ```bash
 key=$(kubectl --context kind-telemetry -n telemetry get secret ingest-api-key -o jsonpath='{.data.key}' | base64 -d)
@@ -152,7 +152,7 @@ cd ingest && ./gradlew integrationTest
 
 ## CI
 
-`.github/workflows/ci.yml` runs on every push: ruff, pytest with coverage gates (simulator, processor), Gradle checks (ingest) and terraform fmt/validate/tflint. The Testcontainers integration tests (processor), `integrationTest` (ingest), the image builds and the `kind` e2e run are for pull requests only.
+`.github/workflows/ci.yml` runs on every push: ruff, pytest with coverage gates (simulator, processor), Gradle checks (ingest) and terraform fmt/validate/tflint. The Testcontainers integration tests (processor), `integrationTest` (ingest) and the image builds run on pull requests only. The `kind` e2e run is on pull requests, pushes to `main` and manual runs.
 
 ## More
 

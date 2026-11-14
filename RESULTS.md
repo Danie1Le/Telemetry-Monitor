@@ -59,7 +59,7 @@ was re-run.
 and SNS in us-east-2). Ingest, the processor, the simulator and KEDA ran on the local kind
 cluster, as [docs/runbook.md](docs/runbook.md) designs it. Images were built from c3b0806. The
 only local change during the run was a line-ending fix to `scripts/aws-key.sh`, which deploys
-nothing ([PR #8](https://github.com/Danie1Le/Telemetry-Monitor/pull/8), merged after the run as
+nothing ([PR #8](https://github.com/Danie1Le/Rocket-Telemetry-Monitor/pull/8), merged after the run as
 cd3718c; the cleanup check ran unpatched).
 
 The rate is capped at 3 batches/s (150 readings/s). The `readings` table has 20 provisioned WCU
@@ -77,9 +77,9 @@ The third time, the load ended about 6 s after the second replica was Ready, and
 drained to 0 before KEDA went back to one. The queue was at 100 or more in 36 of the 125 samples
 taken during the load, and was first empty 48 s after the load stopped.
 
-The likely cause, which is not proven, is the round trips. The processor runs on the kind cluster on
+The likely cause, not proven, is network round trips: the processor runs on the kind cluster on
 the host and makes a round trip to us-east-2 for every SQS receive and delete and every DynamoDB
-write. So one replica drains far fewer batches/s than it does against ElasticMQ and DynamoDB
+write, so one replica drains far fewer batches/s than it does against ElasticMQ and DynamoDB
 Local in the cluster, where the kind setup held 30 batches/s at 4b5664e. The same round trip,
 from ingest's send to SQS, likely explains the higher ingest p95 (124.29 ms against 9.13 ms on
 kind at 4b5664e).
