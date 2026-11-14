@@ -26,11 +26,11 @@ The rules run per flight and engine strictly in batch-second order, through a re
 - After a crash or a lost batch, detection for that engine waits up to `reorderWaitSeconds` (plus up to one 20 s long poll), and up to the 10 s lock TTL if the drainer itself died.
 - A batch that never arrives costs that wait once, then is treated as absent.
 - A batch whose recording still fails once it has been buffered for `reorderWaitSeconds` goes to the DLQ, and the drain treats it as absent and continues.
-- One drainer per engine holds only while recording one batch takes less than the 10 s lock TTL. A slower one can overlap the next drainer; the idempotent rules absorb that (a critical email may go out twice), and the cursor never moves back.
+- The one-drainer-per-engine guarantee holds only while recording one batch takes less than the 10 s lock TTL. A slower drainer can overlap the next one. The idempotent rules absorb that (a critical email may go out twice), and the cursor never moves back.
 - Valkey now also holds up to `reorderWaitSeconds` of batches per engine while a second is missing.
 
 ## Alternatives considered
 
-- **Only graceful kills in the chaos run:** hides a real failure mode instead of fixing it.
-- **Document the limit:** leaves an anomaly in a redelivered batch undetected.
-- **SQS FIFO queue:** ordered per message group, but rejected: it hides the idempotency story and caps throughput.
+- Only graceful kills in the chaos run. This hides a real failure mode instead of fixing it.
+- Document the limit. This leaves an anomaly in a redelivered batch undetected.
+- SQS FIFO queue. It is ordered per message group, but it was rejected because it hides the idempotency story and caps throughput.

@@ -1,16 +1,16 @@
 # Results
 
-Every number here was measured, and links to its raw output in `results/<date>/`. The tools:
-`load/` (k6 scripts) and `scripts/measure.py` (see its docstring for each command and what it
-counts). The two AWS rows are from the one-time AWS run in [docs/runbook.md](docs/runbook.md)
-(step 9): real SQS, DynamoDB and SNS in us-east-2, with ingest, the processor, the simulator and
-KEDA still on the kind cluster. [See the AWS note](#aws-note).
+Every number here was measured and links to its raw output in `results/<date>/`. The numbers come
+from the k6 scripts in `load/` and from `scripts/measure.py`, whose docstring explains each command
+and what it counts. The two AWS rows are from the one-time AWS run in
+[docs/runbook.md](docs/runbook.md) (step 9). That run used real SQS, DynamoDB and SNS in us-east-2,
+with ingest, the processor, the simulator and KEDA still on the kind cluster. [See the AWS note](#aws-note).
 
 ## Metrics
 
 | Metric | Value | Environment | Date | Commit | Config | Hardware | Raw output |
 |---|---|---|---|---|---|---|---|
-| <a id="throughput"></a>Sustained readings/s (10 min, no 5xx, queue not growing; throttling not checkable on DynamoDB Local) | 1,500 (30 batches/s): k6 passed (0 non-2xx, 0 rejected, 0 dropped), nothing dead-lettered. Queue depth is a 0-698 sawtooth as KEDA scales the processor between 1 and 5 replicas, not a flat line; the run counts as not growing because the last-minute mean (178.0) is at most the first-minute mean (236.6) + 10. [Every attempt](#sustained-attempts) | kind | 2026-11-10 | 4b5664e | `measure.py sustained --rate 30 --duration 600` (30 batches/s), on a new cluster | i7-9700F, 16 GB host; Docker Desktop 8 CPU, 7.7 GiB | [results/2026-11-10/sustained-064954.json](results/2026-11-10/sustained-064954.json) ([k6](results/2026-11-10/sustained-064954-k6.txt)) |
+| <a id="throughput"></a>Sustained readings/s (10 min, no 5xx, queue not growing; throttling not checkable on DynamoDB Local) | 1,500 (30 batches/s): k6 passed (0 non-2xx, 0 rejected, 0 dropped), nothing dead-lettered. Queue depth rises and falls in a 0-698 sawtooth as KEDA scales the processor between 1 and 5 replicas; the run counts as not growing because the last-minute mean (178.0) is at most the first-minute mean (236.6) + 10. [Every attempt](#sustained-attempts) | kind | 2026-11-10 | 4b5664e | `measure.py sustained --rate 30 --duration 600` (30 batches/s), on a new cluster | i7-9700F, 16 GB host; Docker Desktop 8 CPU, 7.7 GiB | [results/2026-11-10/sustained-064954.json](results/2026-11-10/sustained-064954.json) ([k6](results/2026-11-10/sustained-064954-k6.txt)) |
 | <a id="p95"></a>Ingest p95 latency at the sustained rate | 9.13 ms (max 47.3 ms) at 1,500 readings/s | kind | 2026-11-10 | 4b5664e | `measure.py sustained --rate 30 --duration 600` (30 batches/s), on a new cluster | i7-9700F, 16 GB host; Docker Desktop 8 CPU, 7.7 GiB | [results/2026-11-10/sustained-064954.json](results/2026-11-10/sustained-064954.json) ([k6](results/2026-11-10/sustained-064954-k6.txt)) |
 | <a id="ramp"></a>Ramp: highest step with no failures (readings/s) | 2,000 (40 batches/s) in both ramps, p95 14.5 / 13.3 ms. At 80 batches/s k6 dropped 404 / 73 batches | kind | 2026-11-10 | 4b5664e | `measure.py scale --steps 5,10,20,40,80 --step-seconds 120`, run twice | i7-9700F, 16 GB host; Docker Desktop 8 CPU, 7.7 GiB | [ramp 1](results/2026-11-10/scale-021913.json) ([k6](results/2026-11-10/scale-021913-k6.txt)), [ramp 2](results/2026-11-10/scale-023501.json) ([k6](results/2026-11-10/scale-023501-k6.txt)) |
 | <a id="detect-spike"></a>Detection time, spike: median / max (10 runs) | openedAt 0.0 s / 0.0 s (threshold and rate_of_change; 0 by construction, [see note](#appeared)). In GET /alerts -0.6 s / -0.0 s by the host clock, which is clock offset, not a negative latency: [see note](#appeared) | kind | 2026-11-10 | 0707122 | `measure.py detection --runs 10`, on a new cluster | i7-9700F, 16 GB host; Docker Desktop 8 CPU, 7.7 GiB | [results/2026-11-10/detection-095403.json](results/2026-11-10/detection-095403.json) |
@@ -26,72 +26,78 @@ KEDA still on the kind cluster. [See the AWS note](#aws-note).
 | <a id="coverage"></a>Coverage, overall | Processor 99% of statements (378); ingest 97% of instructions, 79% of branches (JaCoCo) | local | 2026-11-10 | 0707122 | `cd processor && uv run pytest -q --cov=processor` (167 passed); `cd ingest && ./gradlew test jacocoTestReport -q` (32 passed) | n/a | [processor](results/2026-11-10/coverage-processor.txt), [ingest](results/2026-11-10/coverage-ingest.txt) |
 
 Config names the command and its arguments (for example `measure.py sustained --rate 40`),
-and any setting changed from the committed one. Hardware is CPU, RAM and the Docker Desktop
+plus any setting changed from the committed one. Hardware is CPU, RAM and the Docker Desktop
 resource limits. Scale-up and scale-down times are sampled every ~3-4 s, so they are
-+/- ~3-4 s. DynamoDB Local never throttles: "no throttling" is only checkable on AWS.
++/- ~3-4 s. DynamoDB Local never throttles, so "no throttling" is only checkable on AWS.
 
-Throughput, p95, ramp and scale rows ran at 4b5664e. The next commit, 0707122, only
-changes when rate_of_change takes its baseline after a phase grace, not the ingest or queue
-path. That the load rows stand is argued from the diff, not measured: they were not re-run at
-0707122. Detection, chaos and processor coverage ran at 0707122. The ingest coverage run (32
-tests) was at 4b5664e and not repeated; 0707122 does not touch ingest.
+The throughput, p95, ramp and scale rows ran at 4b5664e. The next commit, 0707122, changes only
+when rate_of_change takes its baseline after a phase grace. It does not touch the ingest or queue
+path. The load rows were not re-run at 0707122, so the claim that they still hold rests on the
+diff and was not measured. Detection, chaos and processor coverage ran at 0707122. The ingest
+coverage run (32 tests) was at 4b5664e and was not repeated, because 0707122 does not touch ingest.
 
 <a id="chaos-note"></a>Chaos units: the stored `readings` table holds one item per sensor per
 batch, so 15,000 items is 3,000 batches x 5 sensors, which is 150,000 Readings. k6 sent 3,001
-requests (3,001 iterations at 10/s for 300 s, the first at t=0). Two of them carry the same
-engine and second (engine-1005, 1794305688) in the raw k6 output, so they are one batch key,
-and the expected count is per distinct key: 3,000 batches.
+requests (3,001 iterations at 10/s for 300 s, the first at t=0). In the raw k6 output, two of
+them carry the same engine and second (engine-1005, 1794305688), so they share one batch key.
+The expected count is per distinct key: 3,000 batches.
 
-<a id="appeared"></a>Detection time is from the fault's start (flight start from the Flight
-id, plus the fault's start second) to the alert's openedAt, and to the first GET /alerts poll
-(every ~1 s) that showed it. openedAt is event time (flight time, set in the cluster), so it is 0 s by
-construction for spike, dropout and stuck: the alert opens at the fault's first reading. It
-is not a latency. "In GET /alerts" is the host's clock, and the host and flight clocks differ
-by up to ~1 s. The bias is one-sided: all 10 spike values are negative, and an alert cannot
-appear before its fault, so the offset makes every "in GET /alerts" time, including dropout,
-stuck and drift, read too low by up to ~1 s. Read them as understated by up to ~1 s. The
-offset was not investigated and nothing was re-run.
+<a id="appeared"></a>Detection time runs from the fault's start (the flight start from the
+Flight id, plus the fault's start second) to two points: the alert's openedAt, and the first
+GET /alerts poll (every ~1 s) that showed the alert.
+
+openedAt is event time (flight time, set in the cluster). For spike, dropout and stuck it is
+0 s by construction, because the alert opens at the fault's first reading. It is not a latency.
+
+"In GET /alerts" uses the host's clock, and the host and flight clocks differ by up to ~1 s.
+The error goes one way. All 10 spike values are negative, and an alert cannot appear before its
+fault, so the offset makes every "in GET /alerts" time read too low, including dropout, stuck
+and drift. Read them as understated by up to ~1 s. The offset was not investigated and nothing
+was re-run.
 
 <a id="aws-note"></a>AWS run, 2026-11-13: the queue, tables and topic were real (SQS, DynamoDB
-and SNS in us-east-2), while ingest, the processor, the simulator and KEDA ran on the local kind
-cluster, as [docs/runbook.md](docs/runbook.md) designs it. Images were built from c3b0806; the
-only local change during the run was a line-ending fix to `scripts/aws-key.sh`
-([PR #8](https://github.com/Danie1Le/Telemetry-Monitor/pull/8), merged after the run as cd3718c; the
-cleanup check ran unpatched), which deploys nothing. The rate is capped at 3 batches/s (150 readings/s): the `readings` table
-has 20 provisioned WCU and one batch writes 5 items, so it throttles above 4 batches/s. The
-simulator was scaled to 0 so it added no writes. Nothing throttled: the runbook's CloudWatch
-loop (Sum, period 60, 02:47:51Z to 03:24:25Z, re-run after CloudWatch's lag) gave 0
-WriteThrottleEvents and 0 ReadThrottleEvents on both `readings` and `alerts`. Its output was not
-saved to `results/`.
+and SNS in us-east-2). Ingest, the processor, the simulator and KEDA ran on the local kind
+cluster, as [docs/runbook.md](docs/runbook.md) designs it. Images were built from c3b0806. The
+only local change during the run was a line-ending fix to `scripts/aws-key.sh`, which deploys
+nothing ([PR #8](https://github.com/Danie1Le/Telemetry-Monitor/pull/8), merged after the run as
+cd3718c; the cleanup check ran unpatched).
+
+The rate is capped at 3 batches/s (150 readings/s). The `readings` table has 20 provisioned WCU
+and one batch writes 5 items, so it throttles above 4 batches/s. The simulator was scaled to 0
+so it added no writes. Nothing throttled: the runbook's CloudWatch loop (Sum, period 60,
+02:47:51Z to 03:24:25Z, re-run after CloudWatch's lag) gave 0 WriteThrottleEvents and 0
+ReadThrottleEvents on both `readings` and `alerts`. Its output was not saved to `results/`.
 
 The capped-rate run fails `measure.py`'s queue-not-growing check even though k6 passed. One
-processor replica fell behind, the queue passed the KEDA target of 100 messages per replica,
-and KEDA asked for a second replica three times (about 177 s, 403 s and 599 s after the run
-started; Ready 9-11 s later each time). The first two times, the two replicas brought the queue
-back under 100 (to 2 the first time, 55 the second) and KEDA went back to one. The third time,
-the load ended about 6 s after the second replica was Ready, and the queue drained to 0 before
-KEDA went back to one. The queue was at 100 or more in 36 of the 125 samples taken during the
-load, and was first empty 48 s after the load stopped. The likely cause, not proven: the
-processor runs on the kind cluster on the host and makes a round trip to us-east-2 for every SQS
-receive and delete and every DynamoDB write, so one replica drains far fewer batches/s than
-against ElasticMQ and DynamoDB Local in the cluster, where the kind setup held 30 batches/s at
-4b5664e. The same round trip, from ingest's send to SQS, likely explains the higher ingest p95
-(124.29 ms against 9.13 ms on kind at 4b5664e).
+processor replica fell behind and the queue passed the KEDA target of 100 messages per replica.
+KEDA asked for a second replica three times: about 177 s, 403 s and 599 s after the run
+started, with the replica Ready 9-11 s later each time. The first two times, the two replicas
+brought the queue back under 100 (to 2 the first time, 55 the second) and KEDA went back to one.
+The third time, the load ended about 6 s after the second replica was Ready, and the queue
+drained to 0 before KEDA went back to one. The queue was at 100 or more in 36 of the 125 samples
+taken during the load, and was first empty 48 s after the load stopped.
 
-Detection ran right after, with the simulator back at 1 replica. Spike has 2 of 3 runs: run 2
-saw no alert in GET /alerts before its poll window closed, 32 s after the fault started
+The likely cause, which is not proven, is the round trips. The processor runs on the kind cluster on
+the host and makes a round trip to us-east-2 for every SQS receive and delete and every DynamoDB
+write. So one replica drains far fewer batches/s than it does against ElasticMQ and DynamoDB
+Local in the cluster, where the kind setup held 30 batches/s at 4b5664e. The same round trip,
+from ingest's send to SQS, likely explains the higher ingest p95 (124.29 ms against 9.13 ms on
+kind at 4b5664e).
+
+Detection ran right after, with the simulator back at 1 replica. Spike has only 2 of 3 runs:
+run 2 saw no alert in GET /alerts before its poll window closed, 32 s after the fault started
 (`spike: alerts []`). The likely cause is that the alerts appeared after the window, since run
 1's appeared at 26.4 s; this was not confirmed. The GET /alerts times are slower and more
 spread out than on kind (dropout median 15.1 s against 2.3 s, max 28.9 s), likely from the same
-round trips, and the [clock offset](#appeared) applies to them too. openedAt is event time and
+round trips. The [clock offset](#appeared) applies to them too. openedAt is event time and
 matches kind.
 
-The runbook's demo (step 8) also worked: a spike posted 75 s into a flight returned 202, GET
+The runbook's demo (step 8) also worked. A spike posted 75 s into a flight returned 202, GET
 /alerts showed threshold and rate_of_change on `engine-1.chamber_temp` 5 s later, and the alert
-email arrived. Afterwards `terraform destroy` removed 11 of 11 resources,
-`scripts/aws-cleanup-check.sh` found nothing tagged left apart from the bootstrap budgets (which
-were then destroyed too) and no demo user or keys, and the
-billing page showed $0.00. None of these was saved to `results/`.
+email arrived. Afterwards `terraform destroy` removed 11 of 11 resources.
+`scripts/aws-cleanup-check.sh` found no demo user or keys, and nothing tagged apart from the
+bootstrap budgets, which were then destroyed too. The billing page showed $0.00. None of these
+was saved to `results/`.
 
 <a id="sustained-attempts"></a>Every sustained attempt, in order. Only the last passed:
 

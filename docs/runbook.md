@@ -8,7 +8,7 @@ Scripts handle steps 6, 7, 11 and 13. The other steps stay manual. Every resourc
 
 1. [ ] Sign up with **Sign up for AWS (new)** (for example, sign in with Google) and create your first project ([sign-up steps](https://docs.aws.amazon.com/accounts/latest/reference/sign-in-new.html)). The project holds one AWS account, which starts in the Free Tier. Never upgrade it: AWS says you cannot reverse the upgrade ([upgrade](https://docs.aws.amazon.com/accounts/latest/reference/upgrade-account.html)). You do not create a root user, because your AWS Builder ID owns the project account ([compare sign-up options](https://docs.aws.amazon.com/accounts/latest/reference/sign-up-for-aws.html#compare-access-management)). Check that the project's Region is us-east-2: in AWS Settings, choose **Project**, then **Overview**, **Additional Info**. AWS assigns the Region from the country in your contact address, and you cannot modify it ([project Regions](https://docs.aws.amazon.com/accounts/latest/reference/project-regions.html)). Every Region in this repo is us-east-2.
 
-   The docs say a project account allows IAM users for programmatic access and supports AWS Budgets ([supported services](https://docs.aws.amazon.com/accounts/latest/reference/supported-services-sign-up-new.html)), and the [2026-11-13 run](../RESULTS.md#aws-note) used one: every step worked, from the budgets and the demo IAM user and access key to the destroy and the cleanup check. Creating the project asked for a payment method. AWS placed a USD $1 verification hold on it for 3-5 days, and said there are no charges until you upgrade to a paid plan.
+   The docs say a project account allows IAM users for programmatic access and supports AWS Budgets ([supported services](https://docs.aws.amazon.com/accounts/latest/reference/supported-services-sign-up-new.html)). The [2026-11-13 run](../RESULTS.md#aws-note) used a project account, and every step worked: the budgets, the demo IAM user and access key, the destroy and the cleanup check. Creating the project asked for a payment method. AWS placed a USD $1 verification hold on it for 3-5 days, and said there are no charges until you upgrade to a paid plan.
 2. [ ] Log the AWS CLI in to the project, then export the session credentials into the shell, because Terraform and other external tools may not read the `aws login` credentials:
    ```bash
    aws login --profile telemetry
@@ -60,8 +60,8 @@ Scripts handle steps 6, 7, 11 and 13. The other steps stay manual. Every resourc
 
 ## After
 
-14. [ ] Once the cleanup check passes, the local `terraform/main` state file and the backup from step 4a can be deleted.
-15. [ ] After the demo and the AWS numbers are captured, **close the project by hand**: in AWS Settings, open the project and choose **Close project**. On a classic account, close the account instead. The bootstrap budgets go with it.
+14. [ ] Once the cleanup check passes, you can delete the local `terraform/main` state file and the backup from step 4a.
+15. [ ] Once you have the demo and the AWS numbers, **close the project by hand**: in AWS Settings, open the project and choose **Close project**. On a classic account, close the account instead. The bootstrap budgets go with it.
 
 ## Notes
 
@@ -69,5 +69,5 @@ Scripts handle steps 6, 7, 11 and 13. The other steps stay manual. Every resourc
 - `scripts/aws-key.sh` refuses to create a key while the demo user already has one: run `scripts/aws-key.sh --delete` first.
 - Run step 11 before step 12: the scripts read the demo user name and the Terraform outputs from the state.
 - `aws.env` is generated and gitignored. Nothing account-specific is committed. To render the overlay offline, copy the sample first: `cp k8s/overlays/aws/aws.env.example k8s/overlays/aws/aws.env`, then `kubectl kustomize k8s/overlays/aws`.
-- The budgets only alert. There is no automatic kill switch, because the Free plan can't bill. They catch mistakes such as an accidental upgrade, and the response is to run destroy.
+- The budgets only alert. There is no automatic kill switch, because the Free plan can't bill. They catch mistakes such as an accidental upgrade. If one fires, run destroy.
 - Never leave the stack up across sessions: it is easy to forget it is running.
