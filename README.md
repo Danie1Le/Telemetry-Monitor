@@ -1,13 +1,20 @@
 # Telemetry Monitor
 
-[![ci](https://github.com/Danie1Le/Telemetry-Monitor/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Danie1Le/Telemetry-Monitor/actions/workflows/ci.yml?query=branch%3Amain)
+[![ci](https://github.com/Danie1Le/Rocket-Telemetry-Monitor/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Danie1Le/Rocket-Telemetry-Monitor/actions/workflows/ci.yml?query=branch%3Amain)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-Telemetry Monitor is a small streaming pipeline. A simulated launch vehicle posts sensor Readings over HTTP. An ingest service validates them and queues them on SQS. A processor stores them in DynamoDB, runs anomaly Rules and records Alerts, which `GET /alerts` serves. It runs on Kubernetes (kind) with the queue, tables and topics emulated locally, and the same manifests can target real AWS. It demonstrates a Java and Python service pair behind JSON-schema contracts, queue-depth autoscaling with KEDA, at-least-once processing made safe by idempotent writes and a reorder buffer, and load, detection-time and chaos measurements.
+Telemetry Monitor is a small streaming pipeline that watches telemetry from a simulated launch vehicle and raises Alerts when it detects anomalies.
 
-CLAUDE.md and docs/agents/ configure the AI coding agents used to build the project.
+The simulator posts sensor Readings over HTTP. An ingest service (Java) validates them and queues them on SQS. A processor (Python) stores them in DynamoDB, runs anomaly Rules and records Alerts, which `GET /alerts` serves. Everything runs on Kubernetes (kind), with the queue, tables and topics emulated locally. The same manifests can also target real AWS.
 
-Terms (Reading, Batch, Flight, Phase, Fault, Alert...) are defined in [GLOSSARY.md](GLOSSARY.md). Design decisions: [docs/adr/](docs/adr/).
+The project is a worked example of:
+
+- a Java and a Python service behind shared JSON-schema contracts
+- autoscaling on queue depth with KEDA
+- at-least-once processing made safe by idempotent writes and a reorder buffer ([ADR 0001](docs/adr/0001-reorder-buffer-for-rule-evaluation.md))
+- load, detection-time and chaos measurements, each linked to its raw output ([Results](#results))
+
+To run it, start with [Local loop (kind)](#local-loop-kind). Terms such as Reading, Batch, Flight, Phase, Fault and Alert are defined in [GLOSSARY.md](GLOSSARY.md). Design decisions are in [docs/adr/](docs/adr/).
 
 ```mermaid
 flowchart LR
@@ -49,16 +56,16 @@ flowchart LR
 Measured on a local kind cluster, and once with real AWS queues and tables (last bullet). [RESULTS.md](RESULTS.md) has the hardware, commands and raw output.
 
 - [1,500 readings/s sustained for 10 minutes](RESULTS.md#throughput), with a [9.13 ms p95 ingest latency](RESULTS.md#p95).
-- [Ramp: no failures up to 2,000 readings/s](RESULTS.md#ramp), in 2-minute steps (a 10-minute run at that rate failed: see the [attempts](RESULTS.md#sustained-attempts)).
-- KEDA adds a processor replica [21.6 s and 102.3 s after the queue passes its target](RESULTS.md#scale-up) (in the second ramp the queue briefly crossed and fell back; 22.7 s from its next crossing) and [drains back to one in 44.6 s and 56.9 s](RESULTS.md#scale-down) (two ramps).
-- Alerts appear in `GET /alerts` [2.3 s (dropout)](RESULTS.md#detect-dropout), [5.4 s (stuck)](RESULTS.md#detect-stuck) and [11.5 s (drift)](RESULTS.md#detect-drift) after the fault starts (median of 10 runs, understated by up to about 1 s: [see the note](RESULTS.md#appeared)).
+- [Ramp: no failures up to 2,000 readings/s](RESULTS.md#ramp) in 2-minute steps. A 10-minute run at that rate failed (see the [attempts](RESULTS.md#sustained-attempts)).
+- In two ramps, KEDA added a processor replica [21.6 s and 102.3 s after the queue passed its target](RESULTS.md#scale-up), and [drained back to one in 44.6 s and 56.9 s](RESULTS.md#scale-down). In the second ramp the queue crossed the target briefly and fell back first; from its next crossing, scale-up took 22.7 s.
+- Alerts appear in `GET /alerts` [2.3 s (dropout)](RESULTS.md#detect-dropout), [5.4 s (stuck)](RESULTS.md#detect-stuck) and [11.5 s (drift)](RESULTS.md#detect-drift) after the fault starts. These are medians of 10 runs, understated by up to about 1 s ([see the note](RESULTS.md#appeared)).
 - [No lost or extra readings or alerts](RESULTS.md#chaos) with 29 processor pods force-deleted during a 5-minute load.
 - [100% statement coverage of the anomaly rules](RESULTS.md#coverage-rules), and [99% of processor statements and 97% of ingest instructions](RESULTS.md#coverage).
-- [On AWS](RESULTS.md#aws-throughput) (real SQS, DynamoDB and SNS; services on kind), 150 readings/s (3 batches/s, under the 20 WCU table's 200 readings/s limit) were accepted with no failures and no throttling, but the queue was not flat: [see the note](RESULTS.md#aws-note).
+- [On AWS](RESULTS.md#aws-throughput), with real SQS, DynamoDB and SNS and the services still on kind, 150 readings/s (3 batches/s, under the 200 readings/s limit of the 20 WCU table) were accepted with no failures and no throttling. The queue was not flat, though ([see the note](RESULTS.md#aws-note)).
 
 ### Results in pictures
 
-Charts are drawn from the raw files in `results/` by [scripts/plot_results.py](scripts/plot_results.py) (`uv run scripts/plot_results.py`).
+[scripts/plot_results.py](scripts/plot_results.py) draws these charts from the raw files in `results/` (`uv run scripts/plot_results.py`).
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/img/kind-scaling-dark.svg">
@@ -79,15 +86,15 @@ AWS, 3 batches/s for 10 minutes: one replica falls behind and KEDA adds a second
   <img src="docs/img/detection-light.svg" alt="Dot plot of the time from each fault's start until GET /alerts showed the alert, median and max, kind (10 runs) against AWS (3 runs). Spike: kind -0.6 / -0.0 s, AWS 24.0 / 26.4 s (2 of 3 runs). Dropout: kind 2.3 / 2.8 s, AWS 15.1 / 28.9 s. Stuck: kind 5.4 / 5.9 s, AWS 5.5 / 18.7 s. Drift: kind 11.5 / 14.0 s, AWS 14.3 / 14.7 s.">
 </picture>
 
-Detection time in `GET /alerts`, kind against AWS ([kind rows](RESULTS.md#detect-spike), [AWS row](RESULTS.md#aws-detection); kind spike is below 0 s from clock offset: [see the note](RESULTS.md#appeared)).
+Detection time in `GET /alerts`, kind against AWS ([kind rows](RESULTS.md#detect-spike), [AWS row](RESULTS.md#aws-detection)). The kind spike times are below 0 s because of clock offset ([see the note](RESULTS.md#appeared)).
 
 <img src="docs/img/aws-alerts-table.png" alt="AWS DynamoDB console, alerts table scan: 2 items returned, both for one flight, opened in the ascent phase on a chamber_temp sensor, one by the rate_of_change rule and one by the threshold rule.">
 
-The runbook demo's spike raised two Alerts (threshold and rate_of_change), here in the real DynamoDB `alerts` table; the scan time shown is console local time (UTC-8), 02:47Z on November 13 ([AWS note](RESULTS.md#aws-note)).
+The runbook demo's spike raised two Alerts (threshold and rate_of_change), shown here in the real DynamoDB `alerts` table. The scan time is console local time (UTC-8), which is 02:47Z on November 13 ([AWS note](RESULTS.md#aws-note)).
 
 <img src="docs/img/aws-readings-writes.png" alt="AWS DynamoDB console metrics for the readings table: write usage against the 20 provisioned WCU line, and the write throttled requests and throttled events panels showing no data.">
 
-The `readings` table's write usage against its 20 provisioned WCU, with no throttled requests or events ([AWS capped-rate row](RESULTS.md#aws-throughput)). The axis is UTC. The 31.6 peak near 02:44Z came before the measured run (02:48-03:21Z): the processor draining a backlog built while it crash-looped on a bad credential ([PR #8](https://github.com/Danie1Le/Telemetry-Monitor/pull/8)). DynamoDB burst capacity absorbed every excursion above 20 WCU: 0 throttle events.
+The `readings` table's write usage against its 20 provisioned WCU, with no throttled requests or events ([AWS capped-rate row](RESULTS.md#aws-throughput)). The axis is UTC. The 31.6 peak near 02:44Z came before the measured run (02:48-03:21Z). It is the processor draining a backlog that built up while it crash-looped on a bad credential ([PR #8](https://github.com/Danie1Le/Rocket-Telemetry-Monitor/pull/8)). DynamoDB burst capacity absorbed every excursion above 20 WCU, with 0 throttle events.
 
 ## Layout
 
@@ -115,7 +122,7 @@ uv run --project simulator scripts/measure.py <command>   # scale, sustained, de
 scripts/kind-down.sh
 ```
 
-`GET /alerts` reads a Flight's Alerts. It and `POST /readings` need the `X-Api-Key` header, whose value `scripts/kind-up.sh` generates into the Secret `ingest-api-key`. Only `/actuator/health` (and its `liveness` and `readiness` groups) is open; every other Actuator endpoint is unexposed. `curl -H @-` reads the header from stdin, which keeps the key off the command line. Flight ids are in `kubectl --context kind-telemetry -n telemetry logs deploy/simulator`.
+`GET /alerts` returns a Flight's Alerts. Both `GET /alerts` and `POST /readings` need the `X-Api-Key` header. `scripts/kind-up.sh` generates the key into the Secret `ingest-api-key`. Only `/actuator/health` (and its `liveness` and `readiness` groups) is open; no other Actuator endpoint is exposed. In the example below, `curl -H @-` reads the header from stdin, which keeps the key off the command line. Flight ids are in `kubectl --context kind-telemetry -n telemetry logs deploy/simulator`.
 
 ```bash
 key=$(kubectl --context kind-telemetry -n telemetry get secret ingest-api-key -o jsonpath='{.data.key}' | base64 -d)
@@ -145,8 +152,10 @@ cd ingest && ./gradlew integrationTest
 
 ## CI
 
-`.github/workflows/ci.yml`: on every push, ruff, pytest with coverage gates (simulator, processor), Gradle checks (ingest) and terraform fmt/validate/tflint. On pull requests only: Testcontainers integration tests (processor), `integrationTest` (ingest), image builds and the `kind` e2e run.
+`.github/workflows/ci.yml` runs on every push: ruff, pytest with coverage gates (simulator, processor), Gradle checks (ingest) and terraform fmt/validate/tflint. The Testcontainers integration tests (processor), `integrationTest` (ingest) and the image builds run on pull requests only. The `kind` e2e run is on pull requests, pushes to `main` and manual runs.
 
 ## More
 
 - [RESULTS.md](RESULTS.md): measured numbers, each with how it was measured
+- [docs/runbook.md](docs/runbook.md): the one-time deploy to real AWS
+- CLAUDE.md and docs/agents/ configure the AI coding agents used to build the project.

@@ -57,5 +57,5 @@ A named check that detects one kind of anomaly, such as threshold, rate of chang
 _Avoid_: Detector, check, policy
 
 **Alert**:
-The record of one detected anomaly. It opens when a rule first fires and closes when the readings return to normal, and it is either a warning or critical.
+The record of one detected anomaly. It opens when a rule first fires and closes when the readings return to normal. Each alert is either a warning or critical.
 _Avoid_: Alarm, notification, warning
